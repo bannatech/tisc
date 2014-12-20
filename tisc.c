@@ -2,19 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAXSYMBOLS   1000
-#define MAXSYMBOLLEN 100
-#define MAXLINELEN   100
-#define MAX_INSTYPES 4
-
-/*
- OP CODE SPEC
-  4 bit integers cut in half,
-  LSB is postfix, MSB is prefix (or C)
-
- C B A OP when OP < 3 otherwise:
- OPB A OP
-*/
+#define MAX_SYMBOLS    1000
+#define MAX_SYMBOL_LEN 100
+#define MAX_LINE_LEN   100
+#define MAX_INSTYPES   4
 
 #define ADD  0
 #define NAND 1
@@ -22,13 +13,12 @@
 #define CIN  2
 #define LLI  3
 #define LUI  7
-#define EXT  11 // extended instructions
+#define EXT  11
 #define CMP  15
 
-char symbols[MAXSYMBOLS][MAXSYMBOLLEN];
-int  addresses[MAXSYMBOLS];
 int  validSymbols = 0;
-
+int  addresses[MAX_SYMBOLS];
+char symbols[MAX_SYMBOLS][MAX_SYMBOL_LEN];
 char *formats[MAX_INSTYPES][8] =
 {
 	// 0 arg instructions
@@ -70,19 +60,21 @@ char *parse(FILE *file, char *line, char **label, char **opcode,
             char **arg0, char **arg1, char **arg2)
 {
 	char *str, *first;
-	str = fgets(line, MAXLINELEN, file);
+	str = fgets(line, MAX_LINE_LEN, file);
 	if (str != NULL)
 	{
 		first = strtok(line, " \t\n");
 		if (first == NULL || first[0] == '#')
 		{
 			return parse(file, line, label, opcode, arg0, arg1, arg2);
-		} else if (first[strlen(first) - 1] == ':')
+		}
+		else if (first[strlen(first) - 1] == ':')
 		{
 			*label = first;
 			*opcode = strtok(NULL, " \t\n");
 			first[strlen(first) - 1] = '\0';
-		} else
+		}
+		else
 		{
 			*label = NULL;
 			*opcode = first;
@@ -95,7 +87,7 @@ char *parse(FILE *file, char *line, char **label, char **opcode,
 	return(str);
 }
 
-int labelext(const char *label)
+int labelexists(const char *label)
 {
 	int i, status = 0;
 
@@ -140,6 +132,7 @@ int preprocess(int address, char *label, char *opcode,
 			if (status == 0) status = validins(op, i, opcode, args);
 		}
 	}
+
 	switch (status)
 	{
 		case 0:
@@ -153,10 +146,11 @@ int preprocess(int address, char *label, char *opcode,
 	//duplicate label check
 	if (label != NULL)
 	{
-		if (labelext(label) == 1)
+		if (labelexists(label) == 1)
 		{
 			printf("Error:%i: label exists '%s'\n",address, label);
-		} else
+		}
+		else
 		{
 			strcpy(symbols[validSymbols], label);
 			addresses[validSymbols] = address;
@@ -179,36 +173,32 @@ int main(int argc, char *argv[])
 {
 	if (argc != 3)
 	{
-		fprintf(stderr, "error useage: %s <assembly-code-file> <machine-code-file> \n", argv[0]);
+		fprintf(stderr,
+		"error useage: %s <assembly-code-file> <machine-code-file> \n", argv[0]);
 		exit(1);
 	}
 
 	char *input,  *output;
 	FILE *inputf, *outputf;
 	char *labels, *opcodes, *args0, *args1, *args2;
-	char lines[MAXLINELEN+1];
-	
+	char lines[MAX_LINE_LEN + 1];
 	int address = 0;
 
 	input = argv[1];
 	output = argv[2];
-
 	inputf = fopen(input, "r");
-	if (inputf == NULL)
-	{
-		fprintf(stderr, "Error opening file '%s'", input);
-		exit(1);
-	}
 	outputf = fopen(output, "w");
+
+	if (inputf == NULL)
+		fprintf(stderr, "Error opening file '%s'", input); exit(1);
+
 	if (outputf == NULL)
-	{
-		fprintf(stderr, "Error opening file '%s'", output);
-		exit(1);
-	}
+		fprintf(stderr, "Error opening file '%s'", output); exit(1);
 
 	while (parse(inputf, lines, &labels, &opcodes, &args0, &args1, &args2) != NULL)
 	{
-		if (preprocess(address, labels, opcodes, args0, args1, args2) == 0) exit(1);
+		if (preprocess(address, labels, opcodes, args0, args1, args2) == 0)
+			exit(1);
 		address++;
 	}
 
@@ -217,10 +207,13 @@ int main(int argc, char *argv[])
 
 	while (parse(inputf, lines, &labels, &opcodes, &args0, &args1, &args2) != NULL)
 	{
-		if (process(address, outputf, labels, opcodes, args0, args1, args2) == 0) exit(1);
+		if (process(address, outputf, labels, opcodes, args0, args1, args2) == 0)
+			exit(1);
 		address++;
 	}
+
 	fclose(inputf);
 	fclose(outputf);
+
 	return 1;
 }
