@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #define MAX_SYMBOLS    1000
@@ -15,6 +16,26 @@
 #define LUI  7
 #define EXT  11
 #define CMP  15
+
+typedef struct InstructionDefintion
+{
+	char* instructionLabel;
+	int arguements;
+	int instructionLength;
+	uint8_t opcode_mask;
+	uint8_t* (*assemble)(struct InstructionDefintion, int, int, int);
+} InstructionDefinition_t;
+
+uint8_t* assemble_default(InstructionDefinition_t definition, int arg0, int arg1, int arg2)
+{
+	uint8_t return_value[] = { definition.opcode_mask };
+	return return_value;
+}
+
+InstructionDefinition_t instruction_definitions[1] = 
+{
+	{ "push", 0, 1, 0x93, assemble_default }
+};
 
 int  validSymbols = 0;
 int  addresses[MAX_SYMBOLS];
@@ -42,6 +63,7 @@ char *formats[MAX_INSTYPES][8] =
 	// 2 arg instructions
 	{
 		"cmp",
+		"cin",
 		NULL
 	},
 	// 3 arg instructions
@@ -49,10 +71,11 @@ char *formats[MAX_INSTYPES][8] =
 		"add",
 		"nand",
 		"or",
-		"cin",
 		NULL
 	}
 };
+
+
 
 /* char *parse -> parses file and sets label, opcode, and args
    accordingly */
@@ -64,6 +87,7 @@ char *parse(FILE *file, char *line, char **label, char **opcode,
 	if (str != NULL)
 	{
 		first = strtok(line, " \t\n");
+
 		if (first == NULL || first[0] == '#')
 		{
 			return parse(file, line, label, opcode, arg0, arg1, arg2);
@@ -124,12 +148,12 @@ int preprocess(int address, char *label, char *opcode,
 	int status = 0;
 
 	// arguement check
-	for (i = 0; i < MAX_INSTYPES; i++)
+	for (i = 0; (i < MAX_INSTYPES) && status == 0; i++)
 	{
-		for (op = 0; formats[i][op] != NULL; op++)
+		for (op = 0; (formats[i][op] != NULL) && status == 0; op++)
 		{
-			char *args[3] = {arg0, arg2, arg2};
-			if (status == 0) status = validins(op, i, opcode, args);
+			char *args[3] = {arg0, arg1, arg2};
+			status = validins(op, i, opcode, args);
 		}
 	}
 
@@ -138,9 +162,11 @@ int preprocess(int address, char *label, char *opcode,
 		case 0:
 			printf("Error:%i: instruction '%s' does not exist\n",address, opcode);
 			status = 1;
+			break;
 		case 2:
 			printf("Error:%i: not enough arguements for '%s'\n",address, opcode);
 			status = 1;
+			break;
 	}
 
 	//duplicate label check
@@ -160,6 +186,7 @@ int preprocess(int address, char *label, char *opcode,
 
 	return status;
 }
+
 /* int process -> 2nd pass over file, instrutions are turned into
    machine code with symbols filled in as adresses, 
    fails if returns -1 */
@@ -190,10 +217,16 @@ int main(int argc, char *argv[])
 	outputf = fopen(output, "w");
 
 	if (inputf == NULL)
-		fprintf(stderr, "Error opening file '%s'", input); exit(1);
+	{
+		fprintf(stderr, "Error opening file '%s'", input);
+		exit(1);
+	}
 
 	if (outputf == NULL)
-		fprintf(stderr, "Error opening file '%s'", output); exit(1);
+	{
+		fprintf(stderr, "Error opening file '%s'", output);
+		exit(1);
+	}
 
 	while (parse(inputf, lines, &labels, &opcodes, &args0, &args1, &args2) != NULL)
 	{
