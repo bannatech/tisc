@@ -3,20 +3,23 @@
 #include <stdint.h>
 #include <string.h>
 
-#define TOT_INSTRUCTIONS 15
+#define TOT_INSTRUCTIONS 16
 #define MAX_SYMBOLS    1000
 #define MAX_SYMBOL_LEN 100
 #define MAX_LINE_LEN   100
 #define MAX_INSTYPES   4
+#define MAX_PGR_SIZE   0xFF
 
-#define ADD  0
-#define NAND 1
-#define OR   2
-#define CIN  2
-#define LLI  3
-#define LUI  7
-#define EXT  11
-#define CMP  15
+#define GR_A        0x1
+#define GR_A_STRING "GRA"
+#define GR_B        0x2
+#define GR_B_STRING "GRB"
+#define GR_C        0x3
+#define GR_C_STRING "GRC"
+
+int  validSymbols = 0;
+int  addresses[MAX_SYMBOLS];
+char symbols[MAX_SYMBOLS][MAX_SYMBOL_LEN];
 
 typedef struct InstructionDefintion
 {
@@ -27,37 +30,271 @@ typedef struct InstructionDefintion
 	int (*assemble)(struct InstructionDefintion*, char* arg[3], uint8_t*);
 } InstructionDefinition_t;
 
-int assemble_default(
+/* Checks if instruction is valid
+ *
+ *  return -1 -> too few arguements
+ *  return  0 -> instruction is valid
+ *  return  1 -> too many arguements
+ */
+int validins(InstructionDefinition_t *ins, const char *opcode, char *arg[])
+{
+	int status = 0;
+
+	int supp_args;
+
+	for (supp_args = 0; supp_args < 3; supp_args++)
+	{
+		if (arg[supp_args] == NULL)
+		{
+			break;
+		}
+	}
+
+	if (ins->arguements > supp_args)
+	{
+		status = -1; // Too few args, fail
+	}
+	else
+	if (ins->arguements < supp_args)
+	{
+		status = 1; // Too many args, fail
+	}
+
+	return status;
+}
+
+int label_address(const char *label)
+{
+  	int i, address = -1;
+
+	for (i = 0; i < validSymbols; i++)
+	{
+		if (strcmp(symbols[i], label) == 0)
+		{
+			address = addresses[i];
+            break;
+		}
+	}
+
+    return address;
+}
+
+int labelexists(const char *label)
+{
+	int i, status = 0;
+
+	for (i = 0; i < validSymbols; i++)
+	{
+		if (strcmp(symbols[i], label) == 0)
+		{
+			status = 1;
+		}
+	}
+
+	return status;
+}
+
+int process_label(char *label, int address)
+{
+	int status = 0;
+
+	if (label != NULL)
+	{
+		//duplicate label check
+		if (labelexists(label) == 0)
+		{
+			//add label to table 'o' label
+			strcpy(symbols[validSymbols], label);
+			addresses[validSymbols] = address;
+			validSymbols++;
+
+			status = 1;
+		}
+	}
+	else
+	{
+		status = 1;
+	}
+
+	return status;
+}
+
+uint8_t getRegisterEnumeration(char* string)
+{
+	if ((string != NULL) && (strcmp(string, GR_A_STRING) == 0))
+	{
+		return GR_A;
+	} else
+	if ((string != NULL) && (strcmp(string, GR_B_STRING) == 0))
+	{
+		return GR_B;
+	} else
+	if ((string != NULL) && (strcmp(string, GR_B_STRING) == 0))
+	{
+		return GR_C;
+	}
+}
+
+int assemble_0arg(
 	InstructionDefinition_t *definition,
 	char* arg[3], uint8_t* write_buffer)
 {
 	write_buffer[0] = definition->opcode_mask;
 
-	return 0;
+	return 1;
+}
+
+int assemble_1arg(
+    InstructionDefinition_t *definition,
+    char* arg[3], uint8_t* write_buffer)
+{
+    uint8_t argB = getRegisterEnumeration(arg[0]);
+    
+    write_buffer[0] = definition->opcode_mask | (argB << 4);
+
+    return 1;
+}
+
+int assemble_2arg(
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer)
+{
+	uint8_t argA, argB;
+
+	argA = getRegisterEnumeration(arg[0]);
+	argB = getRegisterEnumeration(arg[1]);
+
+	write_buffer[0] = definition->opcode_mask;
+
+	write_buffer[0] |= ( argA << 2 ) | ( argB << 4);
+	
+	return 1;
+}
+
+int assemble_2arg_alt(
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer)
+{
+	uint8_t argB, argC;
+
+	argB = getRegisterEnumeration(arg[0]);
+	argC = getRegisterEnumeration(arg[1]);
+
+	write_buffer[0] = definition->opcode_mask;
+
+	write_buffer[0] |= ( argB << 4) | ( argC << 6);
+	
+    return 1;
+}
+
+int assemble_3arg(
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer)
+{
+	uint8_t argA, argB, argC;
+
+	argA = getRegisterEnumeration(arg[0]);
+	argB = getRegisterEnumeration(arg[1]);
+	argC = getRegisterEnumeration(arg[2]);
+
+	write_buffer[0] = definition->opcode_mask;
+
+	write_buffer[0] |= ( argA << 2 ) | ( argB << 4) | ( argC << 6);
+	
+	return 1;
+}
+
+int assemble_immediate(
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer)
+{
+	int return_value = 0;
+	
+	int immediate_value = atoi(arg[0]);
+
+	if (immediate_value < 0x0F && immediate_value >= 0)
+	{
+		write_buffer[0] = definition->opcode_mask | immediate_value << 2;
+
+		return_value = 1;
+	}
+
+	return return_value;
+}
+
+int assemble_li(
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer)
+{
+	int return_value = 0;
+	
+	int immediate_value = atoi(arg[0]);
+
+	if (immediate_value < 0xFF && immediate_value >= 0)
+	{
+		write_buffer[0] = 0x03 | (immediate_value & 0x0F) << 2;
+        write_buffer[1] = 0x43 | ((immediate_value & 0xF0) >> 4) << 2;
+        
+		return_value = 1;
+	}
+
+	return return_value;
+}
+
+int assemble_jmp(
+    InstructionDefinition_t *definition,
+    char* arg[3], uint8_t* write_buffer)
+{
+    int return_value = 0;
+
+    int address = label_address(arg[0]);
+
+    if (address != -1)
+    {
+        write_buffer[0] = definition->opcode_mask;
+        write_buffer[1] = address;
+
+        return_value = 1;
+    }
+
+    return return_value;
 }
 
 InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 {
-	{ "push",  0, 1, 0x93, assemble_default },
-	{ "pop",   0, 1, 0x53, assemble_default },
-	{ "pcr",   0, 1, 0xA3, assemble_default },
-	{ "li",    1, 1, 0x00, assemble_default },
-	{ "lli",   1, 1, 0x03, assemble_default },
-	{ "lui",   1, 1, 0x43, assemble_default },
-	{ "jmp",   1, 2, 0x83, assemble_default },
-	{ "lb",    1, 1, 0x87, assemble_default },
-	{ "sb",    1, 1, 0x8B, assemble_default },
-	{ "sp",    1, 1, 0x8F, assemble_default },
-	{ "cin",   2, 1, 0x02, assemble_default },
-	{ "cmp",   2, 1, 0xC3, assemble_default },
-	{ "or",    2, 1, 0x00, assemble_default },
-	{ "nand",  2, 1, 0x01, assemble_default },
-	{ "add",   2, 1, 0x02, assemble_default },
+	{ "push",  0, 1, 0x93, assemble_0arg },
+	{ "pop",   0, 1, 0x53, assemble_0arg },
+	{ "pcr",   0, 1, 0xA3, assemble_0arg },
+	{ "li",    1, 2, 0x00, assemble_li },
+	{ "lli",   1, 1, 0x03, assemble_immediate },
+	{ "lui",   1, 1, 0x43, assemble_immediate },
+	{ "jmp",   1, 2, 0x83, assemble_jmp },
+	{ "lb",    1, 1, 0x87, assemble_1arg },
+	{ "sb",    1, 1, 0x8B, assemble_1arg },
+	{ "sp",    1, 1, 0x8F, assemble_1arg },
+	{ "cin",   2, 1, 0x02, assemble_2arg_alt },
+    { "mov",   2, 1, 0x00, assemble_2arg_alt },
+	{ "cmp",   2, 1, 0xC3, assemble_2arg },
+	{ "or",    2, 1, 0x00, assemble_3arg },
+	{ "nand",  2, 1, 0x01, assemble_3arg },
+	{ "add",   2, 1, 0x02, assemble_3arg },
 };
+InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
+{
+	InstructionDefinition_t* return_value = NULL;
 
-int  validSymbols = 0;
-int  addresses[MAX_SYMBOLS];
-char symbols[MAX_SYMBOLS][MAX_SYMBOL_LEN];
+	int i;
+	for (i = 0; i < TOT_INSTRUCTIONS; i++)
+	{
+		if (strcmp(definitions[i].instructionLabel, opcode) == 0)
+		{
+			return_value = &definitions[i];
+			break;
+		}
+	}
+
+	return return_value;
+}
 
 /* char *parse -> parses file and sets label, opcode, and args
    accordingly */
@@ -107,101 +344,12 @@ int parse(int* line_number, FILE *file, char *line, char **label, char **opcode,
 	return success;
 }
 
-/* Checks if instruction is valid
- *
- *  return -1 -> too few arguements
- *  return  0 -> instruction is valid
- *  return  1 -> too many arguements
- */
-int validins(InstructionDefinition_t *ins, const char *opcode, char *arg[])
-{
-	int status = 0;
-
-	int supp_args;
-
-	for (supp_args = 0; supp_args < 3; supp_args++)
-	{
-		if (arg[supp_args] == NULL)
-		{
-			break;
-		}
-	}
-
-	if (ins->arguements > supp_args)
-	{
-		status = -1; // Too few args, fail
-	}
-	else
-	if (ins->arguements < supp_args)
-	{
-		status = 1; // Too many args, fail
-	}
-
-	return status;
-}
-InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
-{
-	InstructionDefinition_t* return_value = NULL;
-
-	int i;
-	for (i = 0; i < TOT_INSTRUCTIONS; i++)
-	{
-		if (strcmp(definitions[i].instructionLabel, opcode) == 0)
-		{
-			return_value = &definitions[i];
-			break;
-		}
-	}
-
-	return return_value;
-}
-
-int labelexists(const char *label)
-{
-	int i, status = 0;
-
-	for (i = 0; i < validSymbols; i++)
-	{
-		if (strcmp(symbols[i], label) == 0)
-		{
-			status = 1;
-		}
-	}
-
-	return status;
-}
-
-int process_label(char *label, int address)
-{
-	int status = 0;
-
-	if (label != NULL)
-	{
-		//duplicate label check
-		if (labelexists(label) == 0)
-		{
-			//add label to table 'o' label
-			strcpy(symbols[validSymbols], label);
-			addresses[validSymbols] = address;
-			validSymbols++;
-
-			status = 1;
-		}
-	}
-	else
-	{
-		status = 1;
-	}
-
-	return status;
-}
-
 /* int preprocess -> 1st pass over file, links symbols to address
    and reports syntax errors, fails if returns -1 */
 int preprocess(int line, int *address, char *label, char *opcode,
                char *arg[3])
 {
-	int status = 1;
+	int status = 0;
 
 	InstructionDefinition_t* ins = getInstructionFromOpcode(opcode);
 
@@ -212,26 +360,30 @@ int preprocess(int line, int *address, char *label, char *opcode,
 		case -1:
 			printf("Error:%i: too few arguements for '%s'\n",
 			              line,                       opcode);
-			status = 1;
+			status = 0;
 			break;
 		case 1:
 			printf("Error:%i: too many arguements for '%s'\n",
 			              line,                        opcode);
-			status = 1;
-			break;
-		case 0:
 			status = 0;
 			break;
+		case 0:
+			status = 1;
+			break;
+        default:
+            status = 0;
+            printf("Something Weird!");
+            break;
 		}
 	}
 	else
 	{
 		printf("Error:%i: instruction '%s' does not exist\n",
 		              line,            opcode);
-		status = 1;
+		status = 0;
 	}
 
-	if (status == 0)
+	if (status)
 	{
 		if (process_label(label, *address) == 0)
 		{
@@ -239,11 +391,11 @@ int preprocess(int line, int *address, char *label, char *opcode,
 				"Error:%i: re-use of existing label '%s'\n",
 				       line,                         label );
 
-			status = 1;
+			status = 0;
 		}
 	}
 
-	if (status == 0)
+	if (status)
 	{
 		*address = *address + ins->instructionLength;
 	}
@@ -261,17 +413,16 @@ int process(int line, int* address, uint8_t *buffer, char *label, char *opcode,
 
 	InstructionDefinition_t* ins = getInstructionFromOpcode(opcode);
 
-	if (ins != NULL)
+	if (ins != NULL && ins->assemble != NULL)
 	{
 		status = ins->assemble(ins, arg, buffer + *address);
 	}
 
-	if (status == 0)
+	if (status)
 	{
 		*address = *address + ins->instructionLength;
 	}
 	
-
 	return status;
 }
 
@@ -297,7 +448,7 @@ int main(int argc, char *argv[])
 
 	if (inputf == NULL || ferror(inputf))
 	{
-		fprintf(stderr, "Error opening file '%s'", input);
+		printf("Error opening file '%s'\n", input);
 		goto DITCH;
 	}
 
@@ -306,14 +457,16 @@ int main(int argc, char *argv[])
 
 	if (outputf == NULL || ferror(outputf))
 	{
-		fprintf(stderr, "Error opening file '%s'", output);
+		printf("Error opening file '%s'\n", output);
 		goto DITCH;
 	}
 
 	while (parse(&line_number, inputf, line, &label, &opcodes, args))
 	{
-		if (preprocess(line_number, &address, label, opcodes, args))
+		if (preprocess(line_number, &address, label, opcodes, args) == 0)
 		{
+            printf("Preprocess: Error on line #%i\n", line_number);
+
 			goto DITCH;
 		}
 	}
@@ -322,6 +475,12 @@ int main(int argc, char *argv[])
 
 	int full_size = address;
 
+    if (full_size > MAX_PGR_SIZE)
+    {
+        printf("FATAL: Program exceeds maximum size!\n");
+        goto DITCH;
+    }
+    
 	uint8_t* w_buffer = (uint8_t*)malloc(sizeof(uint8_t) * full_size);
 
 	if (w_buffer != NULL)
@@ -331,20 +490,21 @@ int main(int argc, char *argv[])
 	
 		while (parse(&line_number, inputf, line, &label, &opcodes, args))
 		{
-			if (process(line_number, &address, w_buffer, label, opcodes, args))
+			if (process(line_number, &address, w_buffer, label, opcodes, args) == 0)
 			{
+                printf("Process: Error on line #%i\n", line_number);
 				goto DITCH;
 			}
 		}
 
 		if (fwrite(w_buffer, sizeof(uint8_t), full_size, outputf) == full_size)
 		{
-			printf("Wrote %i bytes to file '%s'\r\n", 
+			printf("Wrote %i bytes to file '%s'\n",
 			              full_size,        output);
 		}
 		else
 		{
-			printf("Failed to write %i bytes to file '%s'!\r\n",
+			printf("Failed to write %i bytes to file '%s'!\n",
 			                        full_size,        output);
 		}
 	}
