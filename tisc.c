@@ -65,18 +65,18 @@ int validins(InstructionDefinition_t *ins, const char *opcode, char *arg[])
 
 int label_address(const char *label)
 {
-  	int i, address = -1;
+	int i, address = -1;
 
 	for (i = 0; i < validSymbols; i++)
 	{
 		if (strcmp(symbols[i], label) == 0)
 		{
 			address = addresses[i];
-            break;
+			break;
 		}
 	}
 
-    return address;
+	return address;
 }
 
 int labelexists(const char *label)
@@ -145,14 +145,14 @@ int assemble_0arg(
 }
 
 int assemble_1arg(
-    InstructionDefinition_t *definition,
-    char* arg[3], uint8_t* write_buffer)
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer)
 {
-    uint8_t argB = getRegisterEnumeration(arg[0]);
-    
-    write_buffer[0] = definition->opcode_mask | (argB << 4);
+	uint8_t argB = getRegisterEnumeration(arg[0]);
+	
+	write_buffer[0] = definition->opcode_mask | (argB << 4);
 
-    return 1;
+	return 1;
 }
 
 int assemble_2arg(
@@ -184,7 +184,7 @@ int assemble_2arg_alt(
 
 	write_buffer[0] |= ( argB << 4) | ( argC << 6);
 	
-    return 1;
+	return 1;
 }
 
 int assemble_3arg(
@@ -233,8 +233,8 @@ int assemble_li(
 	if (immediate_value < 0xFF && immediate_value >= 0)
 	{
 		write_buffer[0] = 0x03 | (immediate_value & 0x0F) << 2;
-        write_buffer[1] = 0x43 | ((immediate_value & 0xF0) >> 4) << 2;
-        
+		write_buffer[1] = 0x43 | ((immediate_value & 0xF0) >> 4) << 2;
+		
 		return_value = 1;
 	}
 
@@ -242,22 +242,22 @@ int assemble_li(
 }
 
 int assemble_jmp(
-    InstructionDefinition_t *definition,
-    char* arg[3], uint8_t* write_buffer)
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer)
 {
-    int return_value = 0;
+	int return_value = 0;
 
-    int address = label_address(arg[0]);
+	int address = label_address(arg[0]);
 
-    if (address != -1)
-    {
-        write_buffer[0] = definition->opcode_mask;
-        write_buffer[1] = address;
+	if (address != -1)
+	{
+		write_buffer[0] = definition->opcode_mask;
+		write_buffer[1] = address;
 
-        return_value = 1;
-    }
+		return_value = 1;
+	}
 
-    return return_value;
+	return return_value;
 }
 
 InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
@@ -273,7 +273,7 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "sb",    1, 1, 0x8B, assemble_1arg },
 	{ "sp",    1, 1, 0x8F, assemble_1arg },
 	{ "cin",   2, 1, 0x02, assemble_2arg_alt },
-    { "mov",   2, 1, 0x00, assemble_2arg_alt },
+	{ "mov",   2, 1, 0x00, assemble_2arg_alt },
 	{ "cmp",   2, 1, 0xC3, assemble_2arg },
 	{ "or",    2, 1, 0x00, assemble_3arg },
 	{ "nand",  2, 1, 0x01, assemble_3arg },
@@ -299,7 +299,7 @@ InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
 /* char *parse -> parses file and sets label, opcode, and args
    accordingly */
 int parse(int* line_number, FILE *file, char *line, char **label, char **opcode,
-            char *arg[3])
+			char *arg[3])
 {
 	int success = 0;
 
@@ -347,7 +347,7 @@ int parse(int* line_number, FILE *file, char *line, char **label, char **opcode,
 /* int preprocess -> 1st pass over file, links symbols to address
    and reports syntax errors, fails if returns -1 */
 int preprocess(int line, int *address, char *label, char *opcode,
-               char *arg[3])
+			   char *arg[3])
 {
 	int status = 0;
 
@@ -359,27 +359,27 @@ int preprocess(int line, int *address, char *label, char *opcode,
 		{
 		case -1:
 			printf("Error:%i: too few arguements for '%s'\n",
-			              line,                       opcode);
+						  line,                       opcode);
 			status = 0;
 			break;
 		case 1:
 			printf("Error:%i: too many arguements for '%s'\n",
-			              line,                        opcode);
+						  line,                        opcode);
 			status = 0;
 			break;
 		case 0:
 			status = 1;
 			break;
-        default:
-            status = 0;
-            printf("Something Weird!");
-            break;
+		default:
+			status = 0;
+			printf("Something Weird!");
+			break;
 		}
 	}
 	else
 	{
 		printf("Error:%i: instruction '%s' does not exist\n",
-		              line,            opcode);
+					  line,            opcode);
 		status = 0;
 	}
 
@@ -389,7 +389,7 @@ int preprocess(int line, int *address, char *label, char *opcode,
 		{
 			printf(
 				"Error:%i: re-use of existing label '%s'\n",
-				       line,                         label );
+					   line,                         label );
 
 			status = 0;
 		}
@@ -407,7 +407,7 @@ int preprocess(int line, int *address, char *label, char *opcode,
    machine code with symbols filled in as adresses,
    fails if returns -1 */
 int process(int line, int* address, uint8_t *buffer, char *label, char *opcode,
-            char *arg[3])
+			char *arg[3])
 {
 	int status = 0;
 
@@ -432,7 +432,7 @@ int main(int argc, char *argv[])
 	{
 		fprintf(stderr,
 			"do: %s <assembly-code-file> <machine-code-file> \n",
-			    argv[0]);
+				argv[0]);
 
 		exit(1);
 	}
@@ -465,7 +465,7 @@ int main(int argc, char *argv[])
 	{
 		if (preprocess(line_number, &address, label, opcodes, args) == 0)
 		{
-            printf("Preprocess: Error on line #%i\n", line_number);
+			printf("Preprocess: Error on line #%i\n", line_number);
 
 			goto DITCH;
 		}
@@ -475,12 +475,12 @@ int main(int argc, char *argv[])
 
 	int full_size = address;
 
-    if (full_size > MAX_PGR_SIZE)
-    {
-        printf("FATAL: Program exceeds maximum size!\n");
-        goto DITCH;
-    }
-    
+	if (full_size > MAX_PGR_SIZE)
+	{
+		printf("FATAL: Program exceeds maximum size!\n");
+		goto DITCH;
+	}
+	
 	uint8_t* w_buffer = (uint8_t*)malloc(sizeof(uint8_t) * full_size);
 
 	if (w_buffer != NULL)
@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
 		{
 			if (process(line_number, &address, w_buffer, label, opcodes, args) == 0)
 			{
-                printf("Process: Error on line #%i\n", line_number);
+				printf("Process: Error on line #%i\n", line_number);
 				goto DITCH;
 			}
 		}
@@ -500,12 +500,12 @@ int main(int argc, char *argv[])
 		if (fwrite(w_buffer, sizeof(uint8_t), full_size, outputf) == full_size)
 		{
 			printf("Wrote %i bytes to file '%s'\n",
-			              full_size,        output);
+						  full_size,        output);
 		}
 		else
 		{
 			printf("Failed to write %i bytes to file '%s'!\n",
-			                        full_size,        output);
+									full_size,        output);
 		}
 	}
 
