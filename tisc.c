@@ -10,6 +10,8 @@
 #define MAX_INSTYPES   4
 #define MAX_PGR_SIZE   0xFF
 
+#define GR_N        0x0
+#define GR_N_STRING "NUL"
 #define GR_A        0x1
 #define GR_A_STRING "GRA"
 #define GR_B        0x2
@@ -132,6 +134,10 @@ uint8_t getRegisterEnumeration(char* string)
 	if ((string != NULL) && (strcmp(string, GR_C_STRING) == 0))
 	{
 		return GR_C;
+	} else
+	if ((strin != NULL) && (strcmp(string, GR_N_STRING) == 0))
+	{
+		return GR_N;
 	}
 
 	return 0xFF;

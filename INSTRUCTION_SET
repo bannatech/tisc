@@ -1,16 +1,39 @@
-TISC
-00000000
-C B A 00 - OR -  C = A || B
-C B A 01 - NAND- C = A nand B
-C B A 10 - ADD - C = A + B
-C B 0010 - CIN - C = ++B
-00B   11 - LLI - load lower immediate to reg 1 (resets reg.)
-01B   11 - LUI - load upper immediate to reg 1 (OR's lower 4 bits)
-10000011 - JMP - on next line use as adress if flag is true
-10010011 - PUS - Push reg 1 to stack
-10100011 - POP - Pop stack to reg 1
-10110011 - PCR - Get current line and save to register 1
-10B 0111 - LB  - Load word from mem pointer to reg B
-10B 1011 - SB  - Store reg B to mem pointer
-10B 1111 - SP  - set pointer B
-11B A 11 - CMP - compare if A>B
+TISCv1.0 (c) Paul Longtine <paul@nanner.co>
+
+T   I   S   C
+ i   n   e   o
+  n   s   t   m
+   y   t       p
+        r       u
+         u       t
+          c       e
+           t       r
+            i      
+             o      
+              n      
+-----------------------------------------------------------------------<
+RAW      - memonic - description
+-----------------------------------------------------------------------<
+00000000 - NOP ----- do nothing
+C B A 00 - OR  ----- C = A || B
+C B A 01 - NAND----- C = A nand B
+C B A 10 - ADD ----- C = A + B
+C B 0010 - CIN ----- C = ++B
+00<lo>11 - LLI ----- load lower immediate to GRA
+01<hi>11 - LUI ----- load upper immediate to GRA
+10000011 - JMP ----- jmp to address in next program word if flag is true
+10010011 - PUS ----- Push GRA to stack
+10100011 - POP ----- Pop stack to reg GRA
+10110011 - PCR ----- Get current line and save to register GRA
+10B 0111 - LB  ----- Load word from mem pointer to ARGB GPR
+10B 1011 - SB  ----- Store contents of ARGB GPR to mem pointer
+10B 1111 - SP  ----- set pointer ARGB
+11B A 11 - CMP ----- sets flag if contents of ARGA>ARGB
+-----------------------------------------------------------------------<
+C = Arguement C / ARGC
+B = Arguement B / ARGB
+A = Arguement A / ARGA
+
+GRA = General Purpose Register A
+GRB = General Purpose Register B 
+GRC = General Purpose Register C
