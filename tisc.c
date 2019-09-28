@@ -129,10 +129,12 @@ uint8_t getRegisterEnumeration(char* string)
 	{
 		return GR_B;
 	} else
-	if ((string != NULL) && (strcmp(string, GR_B_STRING) == 0))
+	if ((string != NULL) && (strcmp(string, GR_C_STRING) == 0))
 	{
 		return GR_C;
 	}
+
+	return 0xFF;
 }
 
 int assemble_0arg(
@@ -426,6 +428,17 @@ int process(int line, int* address, uint8_t *buffer, char *label, char *opcode,
 	return status;
 }
 
+int output_file(FILE* output_file, uint8_t* bytes, int size)
+{
+	fprintf(output_file, "v2.0 raw\n");
+
+	for (int i = 0; i < size; i++)
+	{
+		fprintf(output_file, "%x%s", bytes[i], (i % 8 == 0 && i != 0) ? "\n" : " ");
+	}
+	return 1;
+}
+
 int main(int argc, char *argv[])
 {
 	if (argc != 3)
@@ -497,16 +510,9 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (fwrite(w_buffer, sizeof(uint8_t), full_size, outputf) == full_size)
-		{
-			printf("Wrote %i bytes to file '%s'\n",
-						  full_size,        output);
-		}
-		else
-		{
-			printf("Failed to write %i bytes to file '%s'!\n",
-									full_size,        output);
-		}
+		// Output Logisim raw v2.0 format
+
+		output_file(outputf, w_buffer, full_size);
 	}
 
 DITCH:
