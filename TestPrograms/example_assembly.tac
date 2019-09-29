@@ -5,4 +5,5 @@
 sc: cin GRB GRB
     sb GRB
     lb GRC
+    nand GRC NUL NUL
     jmp sc

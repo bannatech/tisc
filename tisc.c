@@ -135,7 +135,7 @@ uint8_t getRegisterEnumeration(char* string)
 	{
 		return GR_C;
 	} else
-	if ((strin != NULL) && (strcmp(string, GR_N_STRING) == 0))
+	if ((string != NULL) && (strcmp(string, GR_N_STRING) == 0))
 	{
 		return GR_N;
 	}
@@ -238,7 +238,7 @@ int assemble_li(
 	
 	int immediate_value = atoi(arg[0]);
 
-	if (immediate_value < 0xFF && immediate_value >= 0)
+	if (immediate_value <= 0xFF && immediate_value >= 0)
 	{
 		write_buffer[0] = 0x03 | (immediate_value & 0x0F) << 2;
 		write_buffer[1] = 0x43 | ((immediate_value & 0xF0) >> 4) << 2;
@@ -271,8 +271,8 @@ int assemble_jmp(
 InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 {
 	{ "push",  0, 1, 0x93, assemble_0arg },
-	{ "pop",   0, 1, 0x53, assemble_0arg },
-	{ "pcr",   0, 1, 0xA3, assemble_0arg },
+	{ "pop",   0, 1, 0xA3, assemble_0arg },
+	{ "pcr",   0, 1, 0xB3, assemble_0arg },
 	{ "li",    1, 2, 0x00, assemble_li },
 	{ "lli",   1, 1, 0x03, assemble_immediate },
 	{ "lui",   1, 1, 0x43, assemble_immediate },
@@ -283,9 +283,9 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "cin",   2, 1, 0x02, assemble_2arg_alt },
 	{ "mov",   2, 1, 0x00, assemble_2arg_alt },
 	{ "cmp",   2, 1, 0xC3, assemble_2arg },
-	{ "or",    2, 1, 0x00, assemble_3arg },
-	{ "nand",  2, 1, 0x01, assemble_3arg },
-	{ "add",   2, 1, 0x02, assemble_3arg },
+	{ "or",    3, 1, 0x00, assemble_3arg },
+	{ "nand",  3, 1, 0x01, assemble_3arg },
+	{ "add",   3, 1, 0x02, assemble_3arg },
 };
 InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
 {
