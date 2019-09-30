@@ -1,12 +1,11 @@
-start:  li 144 
+start:  li 144
         mov GRA GRC
         li 255
         sp GRA
         mov GRC GRA
         mov NUL GRB
         cin GRB GRC
-loop:   sb GRC
-        add GRB GRC GRB
+loop:   add GRB GRC GRB
         push
         mov GRB GRA
         push
@@ -14,7 +13,7 @@ loop:   sb GRC
         pop
         mov GRA GRC
         pop
+        sb GRC
         cmp GRA GRB
         jmp loop
-        sb GRC
 end:    jmp end
