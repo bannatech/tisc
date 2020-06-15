@@ -3,15 +3,13 @@
 #include <stdint.h>
 #include <string.h>
 
-#define TOT_INSTRUCTIONS 16
+#define TOT_INSTRUCTIONS 20
 #define MAX_SYMBOLS    1000
 #define MAX_SYMBOL_LEN 100
 #define MAX_LINE_LEN   100
 #define MAX_INSTYPES   4
 #define MAX_PGR_SIZE   0xFF
 
-#define GR_N        0x0
-#define GR_N_STRING "NUL"
 #define GR_A        0x1
 #define GR_A_STRING "GRA"
 #define GR_B        0x2
@@ -71,7 +69,7 @@ int label_address(const char *label)
 
 	for (i = 0; i < validSymbols; i++)
 	{
-		if (strcmp(symbols[i], label) == 0)
+		if (strncmp(symbols[i], label, strlen(symbols[i])) == 0)
 		{
 			address = addresses[i];
 			break;
@@ -123,22 +121,18 @@ int process_label(char *label, int address)
 
 uint8_t getRegisterEnumeration(char* string)
 {
-	if ((string != NULL) && (strcmp(string, GR_A_STRING) == 0))
+	if ((string != NULL) && (strncmp(string, GR_A_STRING, strlen(GR_A_STRING)) == 0))
 	{
 		return GR_A;
 	} else
-	if ((string != NULL) && (strcmp(string, GR_B_STRING) == 0))
+	if ((string != NULL) && (strncmp(string, GR_B_STRING, strlen(GR_B_STRING)) == 0))
 	{
 		return GR_B;
 	} else
-	if ((string != NULL) && (strcmp(string, GR_C_STRING) == 0))
+	if ((string != NULL) && (strncmp(string, GR_C_STRING, strlen(GR_C_STRING)) == 0))
 	{
 		return GR_C;
 	} else
-	if ((string != NULL) && (strcmp(string, GR_N_STRING) == 0))
-	{
-		return GR_N;
-	}
 
 	return 0xFF;
 }
@@ -179,7 +173,7 @@ int assemble_2arg(
 	return 1;
 }
 
-int assemble_2arg_alt(
+int assemble_cin(
 	InstructionDefinition_t *definition,
 	char* arg[3], uint8_t* write_buffer)
 {
@@ -191,6 +185,22 @@ int assemble_2arg_alt(
 	write_buffer[0] = definition->opcode_mask;
 
 	write_buffer[0] |= ( argB << 4) | ( argC << 6);
+	
+	return 1;
+}
+
+int assemble_mov(
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer)
+{
+	uint8_t argA, argC;
+
+	argA = getRegisterEnumeration(arg[0]);
+	argC = getRegisterEnumeration(arg[1]);
+
+	write_buffer[0] = definition->opcode_mask;
+
+	write_buffer[0] |= ( argA << 2) | ( argC << 6);
 	
 	return 1;
 }
@@ -264,29 +274,39 @@ int assemble_jmp(
 
 		return_value = 1;
 	}
+	else
+	{
+		printf("Could not find label %s\n", arg[0]);
+	}
 
 	return return_value;
 }
 
 InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 {
-	{ "push",  0, 1, 0x93, assemble_0arg },
-	{ "pop",   0, 1, 0xA3, assemble_0arg },
-	{ "pcr",   0, 1, 0xB3, assemble_0arg },
-	{ "li",    1, 2, 0x00, assemble_li },
-	{ "lli",   1, 1, 0x03, assemble_immediate },
-	{ "lui",   1, 1, 0x43, assemble_immediate },
-	{ "jmp",   1, 2, 0x83, assemble_jmp },
-	{ "lb",    1, 1, 0x87, assemble_1arg },
-	{ "sb",    1, 1, 0x8B, assemble_1arg },
-	{ "sp",    1, 1, 0x8F, assemble_1arg },
-	{ "cin",   2, 1, 0x02, assemble_2arg_alt },
-	{ "mov",   2, 1, 0x00, assemble_2arg_alt },
-	{ "cmp",   2, 1, 0xC3, assemble_2arg },
-	{ "or",    3, 1, 0x00, assemble_3arg },
-	{ "nand",  3, 1, 0x01, assemble_3arg },
-	{ "add",   3, 1, 0x02, assemble_3arg },
+	{ "nop",       0, 1, 0x00, assemble_0arg },
+	{ "push",      0, 1, 0x93, assemble_0arg },
+	{ "pop",       0, 1, 0xA3, assemble_0arg },
+	{ "pcr",       0, 1, 0xB3, assemble_0arg },
+	{ "sco_gthan", 0, 1, 0x00, assemble_0arg },
+	{ "sco_oflow", 0, 1, 0x10, assemble_0arg },
+	{ "sco_andeq", 0, 1, 0x20, assemble_0arg },
+	{ "sco_xoreq", 0, 1, 0x30, assemble_0arg },
+	{ "li",        1, 2, 0x00, assemble_li },
+	{ "lli",       1, 1, 0x03, assemble_immediate },
+	{ "lui",       1, 1, 0x43, assemble_immediate },
+	{ "jmp",       1, 2, 0x83, assemble_jmp },
+	{ "lb",        1, 1, 0x87, assemble_1arg },
+	{ "sb",        1, 1, 0x8B, assemble_1arg },
+	{ "sp",        1, 1, 0x8F, assemble_1arg },
+	{ "cin",       2, 1, 0x02, assemble_cin },
+	{ "mov",       2, 1, 0x00, assemble_mov },
+	{ "cmp",       2, 1, 0xC3, assemble_2arg },
+	{ "or",        3, 1, 0x00, assemble_3arg },
+	{ "nand",      3, 1, 0x01, assemble_3arg },
+	{ "add",       3, 1, 0x02, assemble_3arg },
 };
+
 InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
 {
 	InstructionDefinition_t* return_value = NULL;
@@ -294,7 +314,7 @@ InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
 	int i;
 	for (i = 0; i < TOT_INSTRUCTIONS; i++)
 	{
-		if (strcmp(definitions[i].instructionLabel, opcode) == 0)
+		if (strncmp(definitions[i].instructionLabel, opcode, strlen(definitions[i].instructionLabel)) == 0)
 		{
 			return_value = &definitions[i];
 			break;
@@ -380,7 +400,7 @@ int preprocess(int line, int *address, char *label, char *opcode,
 			break;
 		default:
 			status = 0;
-			printf("Something Weird!");
+			printf("Something Weird!\n");
 			break;
 		}
 	}
@@ -457,7 +477,7 @@ int main(int argc, char *argv[])
 	}
 
 	char *input,  *output;
-	FILE *inputf, *outputf;
+	FILE *inputf = NULL, *outputf = NULL;
 	char *label, *opcodes, *args[3];
 	char line[MAX_LINE_LEN + 1];
 	int address = 0, line_number = 0;
@@ -486,7 +506,7 @@ int main(int argc, char *argv[])
 		{
 			printf("Preprocess: Error on line #%i\n", line_number);
 
-			goto DITCH;
+			goto CLOSEFILES;
 		}
 	}
 
@@ -497,7 +517,7 @@ int main(int argc, char *argv[])
 	if (full_size > MAX_PGR_SIZE)
 	{
 		printf("FATAL: Program exceeds maximum size!\n");
-		goto DITCH;
+		goto CLOSEFILES;
 	}
 	
 	uint8_t* w_buffer = (uint8_t*)malloc(sizeof(uint8_t) * full_size);
@@ -512,7 +532,7 @@ int main(int argc, char *argv[])
 			if (process(line_number, &address, w_buffer, label, opcodes, args) == 0)
 			{
 				printf("Process: Error on line #%i\n", line_number);
-				goto DITCH;
+				goto CLOSEFILES;
 			}
 		}
 
@@ -521,9 +541,10 @@ int main(int argc, char *argv[])
 		output_file(outputf, w_buffer, full_size);
 	}
 
-DITCH:
+CLOSEFILES:
 	if (inputf != NULL) fclose(inputf);
 	if (outputf != NULL) fclose(outputf);
 
+DITCH:
 	return 1;
 }

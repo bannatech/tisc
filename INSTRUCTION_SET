@@ -14,21 +14,26 @@ T   I   S   C
 -----------------------------------------------------------------------<
 RAW      - memonic - description
 -----------------------------------------------------------------------<
-00000000 - NOP ----- do nothing
+00000000 - NOP ----- This will default the comparison operation
 C B A 00 - OR  ----- C = A || B
+00000000 - SCMP_GTHAN ----- CMP will A>B and flag if true
+00010000 - SCMP_OFLOW ----- CMP will A+B and flag if there's overflow
+00100000 - SCMP_ANDEQ ----- CMP will A&B and flag if the output is 0
+00110000 - SCMP_XOREQ ----- CMP will A^B and flag if the output is 0
 C B A 01 - NAND----- C = A nand B
 C B A 10 - ADD ----- C = A + B
 C B 0010 - CIN ----- C = ++B
-00<lo>11 - LLI ----- load lower immediate to GRA
-01<hi>11 - LUI ----- load upper immediate to GRA
+00<lo>11 - LLI ----- load lower immediate to GRC
+01<hi>11 - LUI ----- load upper immediate to GRC
 10000011 - JMP ----- jmp to address in next program word if flag is true
 10010011 - PUS ----- Push GRA to stack
 10100011 - POP ----- Pop stack to reg GRA
-10110011 - PCR ----- Get current line and save to register GRA
+10110011 - PCR ----- Get current line and save to register GRC
 10B 0111 - LB  ----- Load word from mem pointer to ARGB GPR
 10B 1011 - SB  ----- Store contents of ARGB GPR to mem pointer
 10B 1111 - SP  ----- set pointer ARGB
-11B A 11 - CMP ----- sets flag if contents of ARGA>ARGB
+11B A 11 - CMP ----- sets flag on comparison operation
+
 -----------------------------------------------------------------------<
 C = Arguement C / ARGC
 B = Arguement B / ARGB
