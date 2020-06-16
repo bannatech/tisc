@@ -1,6 +1,7 @@
+# This program computes the classic Fibbonacci sequence
 start:  li 0
         mov GRA GRB
-        li 255
+        li 254
         sp GRA
         li 1
         mov GRA GRC

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define TOT_INSTRUCTIONS 20
+#define TOT_INSTRUCTIONS 22
 #define MAX_SYMBOLS    1000
 #define MAX_SYMBOL_LEN 100
 #define MAX_LINE_LEN   100
@@ -292,6 +292,7 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "sco_oflow", 0, 1, 0x10, assemble_0arg },
 	{ "sco_andeq", 0, 1, 0x20, assemble_0arg },
 	{ "sco_xoreq", 0, 1, 0x30, assemble_0arg },
+	{ "ptrinc",    0, 1, 0xF0, assemble_0arg },
 	{ "li",        1, 2, 0x00, assemble_li },
 	{ "lli",       1, 1, 0x03, assemble_immediate },
 	{ "lui",       1, 1, 0x43, assemble_immediate },
@@ -304,7 +305,7 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "cmp",       2, 1, 0xC3, assemble_2arg },
 	{ "or",        3, 1, 0x00, assemble_3arg },
 	{ "nand",      3, 1, 0x01, assemble_3arg },
-	{ "add",       3, 1, 0x02, assemble_3arg },
+	{ "add",       3, 1, 0x02, assemble_3arg }
 };
 
 InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
