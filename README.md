@@ -3,6 +3,8 @@
 This is a for-fun implementation of a relatively simple microarchitecture, with
 an assembler to program the simulated implementation in [Logisim](http://www.cburch.com/logisim/).
 
+![TISC v1.2](Screenshots/tiscv1_2.png)
+
 ## Want to play with it too?
 
 To compile the assembler, run tisc.c through GCC:

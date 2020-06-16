@@ -242,7 +242,7 @@
       <a name="facing" val="north"/>
     </comp>
     <comp lib="6" loc="(303,244)" name="Text">
-      <a name="text" val="TISCv1.0"/>
+      <a name="text" val="TISCv1.2"/>
       <a name="font" val="Dialog plain 14"/>
     </comp>
     <comp lib="6" loc="(290,239)" name="Text"/>
