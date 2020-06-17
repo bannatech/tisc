@@ -1,5 +1,7 @@
 # Example guide for TISC Assembly Code -> "tac"
 
+TODO: Implement some kind of variables / defines
+
 ### Structure
 
 Each assembly line must start with either a comment, 
@@ -46,19 +48,19 @@ Program Counter Read - get the program counters current address
 
 	pcr
 
-Set Comparsion Operation - compare for `A > B`
+Set Comparsion Operation - `cmp` instruction will compare for `A > B`
 
 	sco_gthan
 
-Set Comparison Operation - compare for `A + B > 255`
+Set Comparison Operation - `cmp` instruction will compare for `A + B > 255`
 
 	sco_oflow
 
-Set Comparison Operation - compare for `A & B == 0`
+Set Comparison Operation - `cmp` instruction will compare for `A & B == 0`
 
 	sco_andeq
 
-Set Comparison Operation - compare for `A ^ B == 0`
+Set Comparison Operation - `cmp` instruction will compare for `A ^ B == 0`
 
 	sco_xoreq
 
@@ -68,16 +70,16 @@ Increment memory pointer (set with the `sp` instruction) by `1`
 
 ## 1 Arguement Instructions
 
-Load immediate to GRC. This is a macro for successive lli and lui instructions
+Load immediate to `GRC`. This is a macro for successive lli and lui instructions
 
 	li A<0-255>
 
-Load Lower Immediate to GRC, Least Significant 4 bits of a byte 'nibble'
+Load Lower Immediate to `GRC`, Least Significant 4 bits of a byte 'nibble'
 
 	lli A<0-15>
 
-Load Upper Immediate to GRC, Most Significant 4 bits of a byte 'nibble'
-> Note: This operation ORs the contents of GRC. May be of use. (hint: sign)
+Load Upper Immediate to `GRC`, Most Significant 4 bits of a byte 'nibble'
+> Note: This operation ORs the contents of `GRC`. (you may find this useful)
 
 	lui A<0-15>
 
@@ -118,6 +120,7 @@ Logical OR the contents of `A` and `B`, store the result in `C`
 	or A<GR> B<GR> C<GR>
 
 Logical NAND the contents of `A` and `B`, store the result in `C`
+> NOTE: Considering using this instruction spot for a generic 'do operation' from the currently configured operations that are set by the `sco_*` functions
 
 	nand A<GR> B<GR> C<GR>
 

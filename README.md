@@ -7,12 +7,14 @@ an assembler to program the simulated implementation in [Logisim](http://www.cbu
 
 ## Want to play with it too?
 
-To compile the assembler, run tisc.c through GCC:
+To compile the assembler, I reccomend using GCC:
 
 	gcc tisc.c
 
 To start Logisim with the provided .jar file:
 
 	java -jar CPU/logisim.jar CPU/CPU.circ
+
+Otherwise, if you already have logisim installed on your computer I reccomend using that version instead. I have the .jar file packaged to make the project more portable
 
 I recommend getting familiar with Logisim if you'd like to play with this circuit until there are more sophisticated peripherals available in the Logisim implementation
