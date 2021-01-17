@@ -3,13 +3,15 @@
 #include <stdint.h>
 #include <string.h>
 
-#define TOT_INSTRUCTIONS 22
+#define TOT_INSTRUCTIONS 26
 #define MAX_SYMBOLS    1000
 #define MAX_SYMBOL_LEN 100
 #define MAX_LINE_LEN   100
 #define MAX_INSTYPES   4
 #define MAX_PGR_SIZE   0xFF
 
+#define NR          0x0
+#define NR_STRING   "NIL"
 #define GR_A        0x1
 #define GR_A_STRING "GRA"
 #define GR_B        0x2
@@ -133,6 +135,10 @@ uint8_t getRegisterEnumeration(char* string)
 	{
 		return GR_C;
 	} else
+	if ((string != NULL) && (strncmp(string, NR_STRING, strlen(NR_STRING)) == 0))
+	{
+		return NR;
+	}
 
 	return 0xFF;
 }
@@ -288,10 +294,14 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "push",      0, 1, 0x93, assemble_0arg },
 	{ "pop",       0, 1, 0xA3, assemble_0arg },
 	{ "pcr",       0, 1, 0xB3, assemble_0arg },
-	{ "sco_gthan", 0, 1, 0x00, assemble_0arg },
-	{ "sco_oflow", 0, 1, 0x10, assemble_0arg },
-	{ "sco_andeq", 0, 1, 0x20, assemble_0arg },
-	{ "sco_xoreq", 0, 1, 0x30, assemble_0arg },
+	{ "sop_add",   0, 1, 0x00, assemble_0arg },
+	{ "sop_sub",   0, 1, 0x10, assemble_0arg },
+	{ "sop_and",   0, 1, 0x20, assemble_0arg },
+	{ "sop_xor",   0, 1, 0x30, assemble_0arg },
+	{ "sop_xnor",  0, 1, 0x40, assemble_0arg },
+	{ "sop_cin",   0, 1, 0x50, assemble_0arg },
+	{ "sop_lsh",   0, 1, 0x60, assemble_0arg },
+	{ "sop_rsh",   0, 1, 0x70, assemble_0arg },
 	{ "ptrinc",    0, 1, 0xF0, assemble_0arg },
 	{ "li",        1, 2, 0x00, assemble_li },
 	{ "lli",       1, 1, 0x03, assemble_immediate },
@@ -305,7 +315,7 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "cmp",       2, 1, 0xC3, assemble_2arg },
 	{ "or",        3, 1, 0x00, assemble_3arg },
 	{ "nand",      3, 1, 0x01, assemble_3arg },
-	{ "add",       3, 1, 0x02, assemble_3arg }
+	{ "op",        3, 1, 0x02, assemble_3arg }
 };
 
 InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
