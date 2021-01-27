@@ -228,13 +228,33 @@ int assemble_3arg(
 	return 1;
 }
 
+int stringToInteger(char* str)
+{
+	int return_value = -1;
+
+	if (strncmp("0x", str, 2) == 0)
+	{
+		return_value = (int)strtol(str+2, NULL, 16);
+	}
+	else if (strncmp("0b", str, 2) == 0)
+	{
+		return_value = (int)strtol(str+2, NULL, 2);
+	}
+	else
+	{
+		return_value = atoi(str);
+	}
+
+	return return_value;
+}
+
 int assemble_immediate(
 	InstructionDefinition_t *definition,
 	char* arg[3], uint8_t* write_buffer)
 {
 	int return_value = 0;
 	
-	int immediate_value = atoi(arg[0]);
+	int immediate_value = stringToInteger(arg[0]);
 
 	if (immediate_value < 0x0F && immediate_value >= 0)
 	{
@@ -252,7 +272,7 @@ int assemble_li(
 {
 	int return_value = 0;
 	
-	int immediate_value = atoi(arg[0]);
+	int immediate_value = stringToInteger(arg[0]);
 
 	if (immediate_value <= 0xFF && immediate_value >= 0)
 	{

@@ -31,6 +31,12 @@ Please refer to other examples as reference.
 
  * `<label>` specifies the argument as a label
 
+ * `<0-15>` `<0-255>` specifies an integer value
+ 	* The following formats are accepted:
+ 		* Base 10
+ 		* Base 16: Prefixed with `0x`
+ 		* Base 2: Prefixed with `0b`
+
 ## 0 Argument Instructions
 
 Do nothing and reset the set operation to ADD
