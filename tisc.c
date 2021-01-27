@@ -563,6 +563,7 @@ int main(int argc, char *argv[])
 			if (process(line_number, &address, w_buffer, label, opcodes, args) == 0)
 			{
 				printf("Process: Error on line #%i\n", line_number);
+				free(w_buffer);
 				goto CLOSEFILES;
 			}
 		}
@@ -570,6 +571,8 @@ int main(int argc, char *argv[])
 		// Output Logisim raw v2.0 format
 
 		output_file(outputf, w_buffer, full_size);
+
+		free(w_buffer);
 	}
 
 CLOSEFILES:
