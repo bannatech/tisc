@@ -256,11 +256,19 @@ int assemble_immediate(
 	
 	int immediate_value = stringToInteger(arg[0]);
 
-	if (immediate_value < 0x0F && immediate_value >= 0)
+	if ((immediate_value & 0x0F) == 0)
+	{
+		immediate_value = immediate_value >> 4;
+		write_buffer[0] = definition->opcode_mask | immediate_value << 2;
+
+		return_value = 1;
+	} else
+	if ((immediate_value & 0xF0) == 0)
 	{
 		write_buffer[0] = definition->opcode_mask | immediate_value << 2;
 
 		return_value = 1;
+
 	}
 
 	return return_value;
@@ -485,13 +493,13 @@ int process(int line, int* address, uint8_t *buffer, char *label, char *opcode,
 	return status;
 }
 
-int output_file(FILE* output_file, uint8_t* bytes, int size)
+int output_file(FILE* output, uint8_t* bytes, int size)
 {
-	fprintf(output_file, "v2.0 raw\n");
+	fprintf(output, "v2.0 raw");
 
 	for (int i = 0; i < size; i++)
 	{
-		fprintf(output_file, "%x%s", bytes[i], (i % 8 == 0 && i != 0) ? "\n" : " ");
+		fprintf(output, "%s%x", (i % 8 == 0) ? "\n" : " ", bytes[i]);
 	}
 	return 1;
 }
