@@ -3,7 +3,7 @@
 This is a for-fun implementation of a relatively simple micro-architecture, with
 an assembler to program the simulated implementation in [Logisim](http://www.cburch.com/logisim/).
 
-![TISC v1.3](Screenshots/tiscv1_3.png)
+![TISC v1.4](Screenshots/tiscv1_4.png)
 
 ## Want to play with it too?
 
@@ -13,7 +13,7 @@ which processes text input from the keyboard component and echoes the text out
 to the TTY component. In addition, the program buffers 32 characters and echoes
 the buffer once the user inputs a line feed (enter key).
 
-![TISC Example configuration](Screenshots/tiscv1_3_example.png)
+![TISC Example configuration](Screenshots/tiscv1_4_example.png)
 
 ## Compiling the assembler
 
