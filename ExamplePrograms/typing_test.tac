@@ -2,14 +2,14 @@
 # buffer until the user presses the return key, at that point it dumps the
 # buffer.
 ###################### Set up our buffer pointer to live in GRC
-setup:  lui 32
+setup:  li 32
         mov GRA GRC
 ###################### Set up our polling address
 poll:   sop_xor
         li 252
         sp GRA
 ###################### Load the bitmask for available data
-        lui 128
+        li 128
 ###################### Poll until data is available
 p_loop: lb GRB
         cmp GRB GRA
@@ -29,7 +29,7 @@ p_loop: lb GRB
 ###################### Increment the buffer pointer
         cin GRC GRC
 ###################### If we have reached the end of the buffer, restart
-        lui 112
+        li 112
         cmp GRA GRC
         jmp setup
 ###################### If the user pressed the enter key, output the buffer
@@ -38,7 +38,7 @@ p_loop: lb GRB
         jmp output
         jmp poll
 ###################### Handle backspaces
-bcksp:  lui 32
+bcksp:  li 32
 ###################### Are we at the start of the buffer? If so, we can return 
         cmp GRA GRC
         jmp poll
@@ -48,7 +48,7 @@ bcksp:  lui 32
         op GRC GRA GRC
         jmp poll
 ###################### Echo out all the things in the buffer to the TTY
-output: lui 32
+output: li 32
 o_loop: sp GRA
         lb GRB
         push

@@ -20,7 +20,7 @@ Please refer to other examples as reference.
 
 ### Argument Legend
 
- * `A,B,C` specifies the positional arguments as types
+ * `A<type>, B<type> , C<type>` specifies the positional arguments as types
 
  * `<GR>` specifies the argument type as a General Register
  	* The following types are accepted:
@@ -37,6 +37,8 @@ Please refer to other examples as reference.
  		* Base 16: Prefixed with `0x`
  		* Base 2: Prefixed with `0b`
 
+ * `<bytes>` An array of integers within `<0-255>` e.g. `0xff,255,0b11111111`
+
 ## 0 Argument Instructions
 
 Do nothing and reset the set operation to ADD
@@ -51,7 +53,7 @@ Pop the stack to GRA
 
 	pop
 
-Program Counter Read - get the program counters current address
+Program Counter Read - stores program counter value to `GRC`
 
 	pcr
 
@@ -101,18 +103,19 @@ Increment memory pointer (set with the `sp` instruction) by `1`
 
 ## 1 Argument Instructions
 
-Load immediate to `GRC`. This is a macro for successive lli and lui instructions
-
-	li A<0-255>
-
-Load Lower Immediate to `GRC`, Least Significant 4 bits of a byte
+Load Lower Immediate to `GRA`, Least Significant 4 bits of a byte
 
 	lli A<0-15>
 
-Load Upper Immediate to `GRC`, Most Significant 4 bits of a byte
-> Note: This operation ORs the contents of `GRC`. (you may find this useful)
+Load Immediate to `GRA`, next byte in program memory is used
 
-	lui A<0-15>
+	li A<0-255>
+
+Load `N` Bytes to `STACK`. `len(<bytes>)` must be > 1
+> Note: This instruction loads a set of bytes on to the stack, in string form
+or in byte array form
+
+	lni A<bytes>
 
 Jumps to particular label unless the flag is set by the `cmp` instruction
 executed prior to the `jmp` instruction. 

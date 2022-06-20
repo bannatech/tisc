@@ -27,7 +27,8 @@ C B A 01 - NAND       ----- C = A nand B
 C B A 10 - OP         ----- C = A (OP) B - perform operation set by SOP_*
 C B 0010 - CIN        ----- C = ++B
 00<lo>11 - LLI        ----- Load lower immediate to GRA
-01<hi>11 - LUI        ----- Load upper immediate to GRA
+01000011 - LI         ----- Load byte immediate to GRA 
+01<nb>11 - LNI        ----- Load <nb> length immediate to stack
 10000011 - JMP        ----- JMP to address in next program word if flag is false
 10010011 - PSH        ----- Push GRA to stack
 10100011 - POP        ----- Pop stack to reg GRA

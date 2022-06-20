@@ -65,6 +65,30 @@ int validins(InstructionDefinition_t *ins, const char *opcode, char *arg[])
 	return status;
 }
 
+void add_label(const char* label, int address)
+{
+	//add label to table 'o' label
+	strcpy(symbols[validSymbols], label);
+	addresses[validSymbols] = address;
+	validSymbols++;
+}
+
+int longest_label()
+{
+	int i, labelLen = 0;
+
+	for (i = 0; i < validSymbols; i++)
+	{
+		int len = strlen(symbols[i]);
+		if (len > labelLen)
+		{
+			labelLen = len;
+		}
+	}
+
+	return (labelLen > 5) ? labelLen : 5;
+}
+
 int label_address(const char *label)
 {
 	int i, address = -1;
@@ -79,6 +103,20 @@ int label_address(const char *label)
 	}
 
 	return address;
+}
+
+void update_label(const char* label, int address)
+{
+	int i;
+
+	for (i = 0; i < validSymbols; i++)
+	{
+		if (strncmp(symbols[i], label, strlen(symbols[i])) == 0)
+		{
+			addresses[i] = address;
+			break;
+		}
+	}
 }
 
 int labelexists(const char *label)
@@ -96,7 +134,7 @@ int labelexists(const char *label)
 	return status;
 }
 
-int process_label(char *label, int address)
+int process_label_initial(char *label, int address)
 {
 	int status = 0;
 
@@ -105,11 +143,30 @@ int process_label(char *label, int address)
 		//duplicate label check
 		if (labelexists(label) == 0)
 		{
-			//add label to table 'o' label
-			strcpy(symbols[validSymbols], label);
-			addresses[validSymbols] = address;
-			validSymbols++;
+			add_label(label, address);
 
+			status = 1;
+		}
+	}
+	else
+	{
+		status = 1;
+	}
+
+	return status;
+}
+
+int process_label_final(char *label, int address)
+{
+	int status = 0;
+
+	if (label != NULL)
+	{
+		//make sure the label exists 
+		if (labelexists(label) == 1)
+		{
+			update_label(label, address);
+			
 			status = 1;
 		}
 	}
@@ -248,7 +305,7 @@ int stringToInteger(char* str)
 	return return_value;
 }
 
-int assemble_immediate(
+int assemble_lli(
 	InstructionDefinition_t *definition,
 	char* arg[3], uint8_t* write_buffer)
 {
@@ -256,19 +313,16 @@ int assemble_immediate(
 	
 	int immediate_value = stringToInteger(arg[0]);
 
-	if ((immediate_value & 0x0F) == 0)
-	{
-		immediate_value = immediate_value >> 4;
-		write_buffer[0] = definition->opcode_mask | immediate_value << 2;
-
-		return_value = 1;
-	} else
 	if ((immediate_value & 0xF0) == 0)
 	{
 		write_buffer[0] = definition->opcode_mask | immediate_value << 2;
 
 		return_value = 1;
-
+	}
+	else
+	{
+		printf("FATAL: Value provided is invalid: (%i)", immediate_value);
+		printf("FATAL: Value must not be > 15");
 	}
 
 	return return_value;
@@ -282,11 +336,72 @@ int assemble_li(
 	
 	int immediate_value = stringToInteger(arg[0]);
 
-	if (immediate_value <= 0xFF && immediate_value >= 0)
+	if (immediate_value < 256 && immediate_value >= 0)
 	{
-		write_buffer[0] = 0x03 | (immediate_value & 0x0F) << 2;
-		write_buffer[1] = 0x43 | ((immediate_value & 0xF0) >> 4) << 2;
-		
+		write_buffer[0] = definition->opcode_mask;
+		write_buffer[1] = immediate_value;
+
+		return_value = 1;
+	}
+	else
+	{
+		printf("FATAL: value provided is invalid %i\n", immediate_value);
+		printf("FATAL: value must be < 256 && >= 0\n");
+	}
+
+	return return_value;
+}
+
+int assemble_lni(
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer)
+{
+	int return_value = 0;
+
+	int byte_len = 0;
+	int bytes[16];
+
+	char* byte_str = strtok(arg[0], ",");
+
+	while (byte_str != NULL)
+	{
+		int value = stringToInteger(byte_str);
+
+		if (value > 255 || value < 0)
+		{
+			byte_len = 0;
+			printf("FATAL: value provided is invalid %i\n", value);
+			break;
+		}
+
+		byte_str = strtok(NULL, ",");
+		bytes[byte_len] = value;
+		byte_len++;
+
+		if (byte_len > 16)
+		{
+			byte_len = 0;
+			printf("FATAL: byte array has too many elements. length must be <= 16\n");
+			break;
+		}
+	}
+
+	if (byte_len <= 1)
+	{
+		printf("FATAL: must provide byte array length > 1\n");
+	}
+
+	if (byte_len > 1)
+	{
+		definition->instructionLength = byte_len + 1;
+
+		write_buffer[0] = definition->opcode_mask | (byte_len - 1) << 2;
+
+		for (int i = 1; (i-1) < byte_len; i++)
+		{
+			write_buffer[i] = bytes[i - 1];
+		}
+
 		return_value = 1;
 	}
 
@@ -331,9 +446,9 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "sop_lsh",   0, 1, 0x60, assemble_0arg },
 	{ "sop_rsh",   0, 1, 0x70, assemble_0arg },
 	{ "ptrinc",    0, 1, 0xF0, assemble_0arg },
-	{ "li",        1, 2, 0x00, assemble_li },
-	{ "lli",       1, 1, 0x03, assemble_immediate },
-	{ "lui",       1, 1, 0x43, assemble_immediate },
+	{ "lli",       1, 1, 0x03, assemble_lli },
+	{ "lni",       1, 1, 0x43, assemble_lni },
+	{ "li",        1, 2, 0x43, assemble_li  },
 	{ "jmp",       1, 2, 0x83, assemble_jmp },
 	{ "lb",        1, 1, 0x87, assemble_1arg },
 	{ "sb",        1, 1, 0x8B, assemble_1arg },
@@ -411,7 +526,27 @@ int parse(int* line_number, FILE *file, char *line, char **label, char **opcode,
 	return success;
 }
 
-/* int preprocess -> 1st pass over file, links symbols to address
+/* int labelprocess -> 1st pass over file, defines all labels
+ */
+int labelprocess(int line, int *address, char *label, char *opcode,
+			   char *arg[3])
+{
+
+	int status = 1;
+
+	if (process_label_initial(label, 0) == 0)
+	{
+		printf(
+			"Error:%i: re-use of existing label '%s'\n",
+				   line,                         label );
+
+		status = 0;
+	}
+
+	return status;
+}
+
+/* int preprocess -> 2nd pass over file, links symbols to address
    and reports syntax errors, fails if returns -1 */
 int preprocess(int line, int *address, char *label, char *opcode,
 			   char *arg[3])
@@ -450,31 +585,24 @@ int preprocess(int line, int *address, char *label, char *opcode,
 		status = 0;
 	}
 
-	if (status)
-	{
-		if (process_label(label, *address) == 0)
-		{
-			printf(
-				"Error:%i: re-use of existing label '%s'\n",
-					   line,                         label );
-
-			status = 0;
-		}
-	}
+	process_label_final(label, *address);
 
 	if (status)
 	{
+		uint8_t test_buffer[32];
+		status = ins->assemble(ins, arg, test_buffer);
+
 		*address = *address + ins->instructionLength;
 	}
 
 	return status;
 }
 
-/* int process -> 2nd pass over file, instructions are turned into
+/* int process -> 3rd pass over file, instructions are turned into
    machine code with symbols filled in as adresses,
    fails if returns -1 */
 int process(int line, int* address, uint8_t *buffer, char *label, char *opcode,
-			char *arg[3])
+			char *arg[3]) 
 {
 	int status = 0;
 
@@ -491,6 +619,56 @@ int process(int line, int* address, uint8_t *buffer, char *label, char *opcode,
 	}
 	
 	return status;
+}
+
+void print_instruction_header(int label_width)
+{
+	char* label_str = (char*)malloc(sizeof(char) * (label_width + 1));
+	for (int i = 0; i < label_width; i++)
+	{
+		label_str[i] = ' ';
+	}
+	label_str[label_width] = '\0';
+	strncpy(label_str, "label", 5);
+
+	printf("ln# [addr]:%s <op> <args>\n", label_str);
+}
+
+/* void print_instruction -> prints the instruction with some helpful information
+   about the source line number, the physical address, the label the instruction has,
+   and the args for that instruction
+*/
+void print_instruction(int line, int* address, char *label, char *opcode, char *arg[3], int label_width)
+{
+	int len = 0;
+	for (int i = 0; arg[i] != NULL && i < 3; i++)
+	{
+		len += strlen(arg[i]) + 1;
+	}
+	char* arg_str = "";
+	if (len > 0)
+	{
+		arg_str = (char*)malloc(sizeof(char) * len);
+
+		for (int i = 0; arg[i] != NULL && i < 3; i++)
+		{
+			sprintf(arg_str, "%s%s\t", arg_str, arg[i]);
+		}	
+	}
+
+	char* label_str = (char*)malloc(sizeof(char) * (label_width + 1));
+	for (int i = 0; i < label_width; i++)
+	{
+		label_str[i] = ' ';
+	}
+	label_str[label_width] = '\0';
+
+	if (label != NULL)
+	{
+		strncpy(label_str, label, strlen(label));
+	}
+
+	printf("%03i [0x%02x]:%s %s\t%s\n", line, *address, label_str, opcode, arg_str);
 }
 
 int output_file(FILE* output, uint8_t* bytes, int size)
@@ -538,6 +716,22 @@ int main(int argc, char *argv[])
 		printf("Error opening file '%s'\n", output);
 		goto DITCH;
 	}
+	printf("Assembling tac file: '%s'\n", input);
+
+	while (parse(&line_number, inputf, line, &label, &opcodes, args))
+	{
+		if (labelprocess(line_number, &address, label, opcodes, args) == 0)
+		{
+			printf("Labelprocess: Error on line #%i\n", line_number);
+
+			goto CLOSEFILES;
+		}
+	}
+
+	address = 0;
+	line_number = 0;
+
+	rewind(inputf);
 
 	while (parse(&line_number, inputf, line, &label, &opcodes, args))
 	{
@@ -565,9 +759,15 @@ int main(int argc, char *argv[])
 	{
 		address = 0;
 		line_number = 0;
-	
+
+		int label_width = longest_label();
+
+		print_instruction_header(label_width);
+
 		while (parse(&line_number, inputf, line, &label, &opcodes, args))
 		{
+			print_instruction(line_number - 1, &address, label, opcodes, args, label_width);
+
 			if (process(line_number, &address, w_buffer, label, opcodes, args) == 0)
 			{
 				printf("Process: Error on line #%i\n", line_number);
@@ -577,6 +777,8 @@ int main(int argc, char *argv[])
 		}
 
 		// Output Logisim raw v2.0 format
+
+		printf("Finished assembling tac file: '%s', program size: %i byte%s\n", input, full_size, (full_size > 1) ? "s":"");
 
 		output_file(outputf, w_buffer, full_size);
 
