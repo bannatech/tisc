@@ -632,6 +632,7 @@ void print_instruction_header(int label_width)
 	strncpy(label_str, "label", 5);
 
 	printf("ln# [addr]:%s <op> <args>\n", label_str);
+	free(label_str);
 }
 
 /* void print_instruction -> prints the instruction with some helpful information
@@ -669,6 +670,11 @@ void print_instruction(int line, int* address, char *label, char *opcode, char *
 	}
 
 	printf("%03i [0x%02x]:%s %s\t%s\n", line, *address, label_str, opcode, arg_str);
+	free(label_str);
+	if (strlen(arg_str) != 0)
+	{
+		free(arg_str);
+	}
 }
 
 int output_file(FILE* output, uint8_t* bytes, int size)
