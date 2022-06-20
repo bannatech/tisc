@@ -727,7 +727,7 @@ int main(int argc, char *argv[])
 		printf("Error opening file '%s'\n", output);
 		goto DITCH;
 	}
-	printf("Assembling tac file: '%s'\n", input);
+	printf("Assembling tac file: '%s' TISC v2.0\n", input);
 
 	while (parse(&line_number, inputf, line, &label, &opcodes, args))
 	{
