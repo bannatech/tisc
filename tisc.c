@@ -651,6 +651,11 @@ void print_instruction(int line, int* address, char *label, char *opcode, char *
 	{
 		arg_str = (char*)malloc(sizeof(char) * len);
 
+		for (int i = 0; i < len; i++)
+		{
+			arg_str[i] = '\0';
+		}
+
 		for (int i = 0; arg[i] != NULL && i < 3; i++)
 		{
 			sprintf(arg_str, "%s%s\t", arg_str, arg[i]);
