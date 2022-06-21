@@ -9,7 +9,7 @@
 #define MAX_LINE_LEN   100
 #define MAX_INSTYPES   4
 #define MAX_PGR_SIZE   0xFF
-
+#define MAX_LNI_SIZE   17
 #define NR          0x0
 #define NR_STRING   "NIL"
 #define GR_A        0x1
@@ -359,7 +359,7 @@ int assemble_lni(
 	int return_value = 0;
 
 	int byte_len = 0;
-	int bytes[16];
+	int bytes[MAX_LNI_SIZE];
 
 	char* byte_str = strtok(arg[0], ",");
 
@@ -375,15 +375,11 @@ int assemble_lni(
 		}
 
 		byte_str = strtok(NULL, ",");
-		bytes[byte_len] = value;
-		byte_len++;
-
-		if (byte_len > 16)
+		if (byte_len < MAX_LNI_SIZE)
 		{
-			byte_len = 0;
-			printf("FATAL: byte array has too many elements. length must be <= 16\n");
-			break;
+			bytes[byte_len] = value;
 		}
+		byte_len++;
 	}
 
 	if (byte_len <= 1)
@@ -391,7 +387,7 @@ int assemble_lni(
 		printf("FATAL: must provide byte array length > 1\n");
 	}
 
-	if (byte_len > 1)
+	if (byte_len > 1 && byte_len < MAX_LNI_SIZE)
 	{
 		definition->instructionLength = byte_len + 1;
 
@@ -403,6 +399,11 @@ int assemble_lni(
 		}
 
 		return_value = 1;
+	}
+	else
+	{
+		printf("FATAL: byte array has too many elements. length must be <= %i\n", MAX_LNI_SIZE);
+		printf("FATAL:                                            length = %i\n", byte_len);
 	}
 
 	return return_value;
@@ -436,7 +437,7 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "nop",       0, 1, 0x00, assemble_0arg },
 	{ "push",      0, 1, 0x93, assemble_0arg },
 	{ "pop",       0, 1, 0xA3, assemble_0arg },
-	{ "pcr",       0, 1, 0xB3, assemble_0arg },
+	{ "peek",      0, 1, 0xB3, assemble_0arg },
 	{ "sop_add",   0, 1, 0x00, assemble_0arg },
 	{ "sop_sub",   0, 1, 0x10, assemble_0arg },
 	{ "sop_and",   0, 1, 0x20, assemble_0arg },
@@ -446,7 +447,7 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "sop_lsh",   0, 1, 0x60, assemble_0arg },
 	{ "sop_rsh",   0, 1, 0x70, assemble_0arg },
 	{ "goto",      0, 1, 0x90, assemble_0arg },
-	{ "gtr",       0, 1, 0xA0, assemble_0arg },
+	{ "pcr",       0, 1, 0xA0, assemble_0arg },
 	{ "ptrinc",    0, 1, 0xF0, assemble_0arg },
 	{ "lli",       1, 1, 0x03, assemble_lli },
 	{ "lni",       1, 1, 0x43, assemble_lni },

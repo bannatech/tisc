@@ -1,13 +1,9 @@
 # This program computes the classic Fibbonacci sequence
-###################### Clear GRA and GRB
-start:  lli 0
-        mov GRA GRB
 ###################### Set our memory pointer
         li 254
         sp GRA
 ###################### Set our inital state
-        lli 1
-        mov GRA GRC
+        cin NIL GRC
 ###################### Printout current state
 loop:   sb GRB
 ###################### Swap GRB and GRC

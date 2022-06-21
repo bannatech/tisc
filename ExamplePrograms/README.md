@@ -2,6 +2,9 @@
 
 TODO: Implement some kind of variables / defines
 
+TODO: Hardcoded string constant meta-instruction
+
+
 ### Structure
 
 Each assembly line must start with either a comment, 
@@ -16,7 +19,7 @@ Or a label, followed with an instruction,
 
 	[label]: [opcode] [arguments]
 
-Please refer to other examples as reference.
+Please refer to the examples as reference.
 
 ### Argument Legend
 
@@ -49,13 +52,13 @@ Push GRA to the stack
 
 	push
 
-Pop the stack to GRA
+Pop the stack to `GRA`
 
 	pop
 
-Program Counter Read - stores program counter value to `GRA`
+Peek the stack to `GRA`
 
-	pcr
+	peek
 
 Set ADD Operation for `cmp` and `op` instructions. `cmp` will flag if there is 
 an overflow. `op` will perform addition.
@@ -97,9 +100,9 @@ there is underflow. `op` will perform A >> B.
 
 	sop_rsh
 
-Get the return value for a common function call and store the address in `GRA`.
+Program Counter Return Address - stores program counter return address to `GRA`
 
-	gtr
+	pcr
 
 Unconditionally branch to the address in `GRA`
 
