@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define TOT_INSTRUCTIONS 26
+#define TOT_INSTRUCTIONS 28
 #define MAX_SYMBOLS    1000
 #define MAX_SYMBOL_LEN 100
 #define MAX_LINE_LEN   100
@@ -95,7 +95,7 @@ int label_address(const char *label)
 
 	for (i = 0; i < validSymbols; i++)
 	{
-		if (strncmp(symbols[i], label, strlen(symbols[i])) == 0)
+		if (strcmp(symbols[i], label) == 0)
 		{
 			address = addresses[i];
 			break;
@@ -111,7 +111,7 @@ void update_label(const char* label, int address)
 
 	for (i = 0; i < validSymbols; i++)
 	{
-		if (strncmp(symbols[i], label, strlen(symbols[i])) == 0)
+		if (strcmp(symbols[i], label) == 0)
 		{
 			addresses[i] = address;
 			break;
@@ -445,6 +445,8 @@ InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 	{ "sop_cin",   0, 1, 0x50, assemble_0arg },
 	{ "sop_lsh",   0, 1, 0x60, assemble_0arg },
 	{ "sop_rsh",   0, 1, 0x70, assemble_0arg },
+	{ "goto",      0, 1, 0x90, assemble_0arg },
+	{ "gtr",       0, 1, 0xA0, assemble_0arg },
 	{ "ptrinc",    0, 1, 0xF0, assemble_0arg },
 	{ "lli",       1, 1, 0x03, assemble_lli },
 	{ "lni",       1, 1, 0x43, assemble_lni },
@@ -727,7 +729,7 @@ int main(int argc, char *argv[])
 		printf("Error opening file '%s'\n", output);
 		goto DITCH;
 	}
-	printf("Assembling tac file: '%s' TISC v2.0\n", input);
+	printf("Assembling tac file: '%s' TISC v2.1\n", input);
 
 	while (parse(&line_number, inputf, line, &label, &opcodes, args))
 	{

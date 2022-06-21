@@ -9,7 +9,8 @@ start:  nop
         nop
         nop
         pcr
-        lli 4
+        mov GRA GRC
+        lli 5
         op GRA GRC GRA
         cin GRA GRB
         sp GRB

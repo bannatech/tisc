@@ -53,7 +53,7 @@ Pop the stack to GRA
 
 	pop
 
-Program Counter Read - stores program counter value to `GRC`
+Program Counter Read - stores program counter value to `GRA`
 
 	pcr
 
@@ -96,6 +96,14 @@ Set Right Shift operation for `cmp` and `op` instructions. `cmp` will flag if
 there is underflow. `op` will perform A >> B.
 
 	sop_rsh
+
+Get the return value for a common function call and store the address in `GRA`.
+
+	gtr
+
+Unconditionally branch to the address in `GRA`
+
+	goto
 
 Increment memory pointer (set with the `sp` instruction) by `1`
 

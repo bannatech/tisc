@@ -3,7 +3,7 @@
 This is a for-fun implementation of a relatively simple micro-architecture, with
 an assembler to program the simulated implementation in [Logisim](http://www.cburch.com/logisim/).
 
-![TISC v2.0](Screenshots/tiscv2_0.png)
+![TISC v2.0](Screenshots/tiscv2_1.png)
 
 ## Want to play with it too?
 
@@ -13,7 +13,7 @@ which processes text input from the keyboard component and echoes the text out
 to the TTY component. In addition, the program buffers 32 characters and tests
 the buffer once the user inputs a line feed (enter key) against a target string.
 
-![TISC Example configuration](Screenshots/tiscv2_0_example.png)
+![TISC Example configuration](Screenshots/tiscv2_1_example.png)
 
 ## Compiling the assembler
 
@@ -32,8 +32,8 @@ program that is ready to load into the Logisim circuit.
 
 A successful output will appear like this:
 
-	$ tisc fibb_test.tac out
-	Assembling tac file: 'fibb_test.tac'
+    $ tisc ExamplePrograms/fibb_test.tac out
+	Assembling tac file: 'ExamplePrograms/fibb_test.tac' TISC v2.1
 	ln# [addr]:label <op> <args>
 	002 [0x00]:start lli    0
 	003 [0x01]:      mov    GRA     GRB
@@ -52,7 +52,7 @@ A successful output will appear like this:
 	022 [0x0f]:      jmp    loop
 	024 [0x11]:      sb     GRB
 	025 [0x12]:end   jmp    end
-	Finished assembling tac file: 'fibb_test.tac', program size: 20 bytes
+	Finished assembling tac file: 'ExamplePrograms/fibb_test.tac', program size: 20 bytes
 
 ## Loading a program
 
