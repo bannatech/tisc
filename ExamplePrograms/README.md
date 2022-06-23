@@ -4,7 +4,6 @@ TODO: Implement some kind of variables / defines
 
 TODO: Hardcoded string constant meta-instruction
 
-
 ### Structure
 
 Each assembly line must start with either a comment, 
@@ -44,11 +43,7 @@ Please refer to the examples as reference.
 
 ## 0 Argument Instructions
 
-Do nothing and reset the set operation to ADD
-
-	nop
-
-Push GRA to the stack
+Push `GRA` to the stack
 
 	push
 
@@ -59,6 +54,18 @@ Pop the stack to `GRA`
 Peek the stack to `GRA`
 
 	peek
+
+Pushes a byte from memory into stack. Uses the memory pointer
+
+	lbs
+
+Pops from the stack into memory. Uses the memory pointer
+
+	sbs
+
+Pops from the stack to use as the memory pointer
+
+	sps
 
 Set ADD Operation for `cmp` and `op` instructions. `cmp` will flag if there is 
 an overflow. `op` will perform addition.
@@ -114,6 +121,11 @@ Increment memory pointer (set with the `sp` instruction) by `1`
 
 ## 1 Argument Instructions
 
+Meta-instruction that is identical to `li` that gets the assigned address of
+the label to use as an immediate
+
+	getlabel A<label>
+
 Load Lower Immediate to `GRA`, Least Significant 4 bits of a byte
 
 	lli A<0-15>
@@ -141,7 +153,7 @@ Stores a byte from the specified register into memory. Uses the memory pointer
 
 	sb A<GR>
 
-Set the memory pointer to specify a specific address in RAM from the specified register
+Set the memory pointer from the specified register
 
 	sp A<GR>
 
@@ -169,6 +181,15 @@ Logical NAND the contents of `A` and `B`, store the result in `C`
 
 	nand A<GR> B<GR> C<GR>
 
-Perform the operation configured with the `sco_*` opcode, with `A` and `B`, store the result in `C`
+Perform the operation set with the `sop_*` opcode, with `A` and `B`, store the result in `C`
 
 	op A<GR> B<GR> C<GR>
+
+# Assembler Instructions
+
+> These instructions are meta-instructions that configure a parameter within the
+assembler
+
+Set the program address of the next instruction to the specified address in memory
+
+	segment A<0-255>

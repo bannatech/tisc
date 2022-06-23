@@ -1,4 +1,4 @@
-# This program computes the classic Fibbonacci sequence
+# fibb_test - This program computes the classic Fibbonacci sequence
 ###################### Set our memory pointer
         li 254
         sp GRA

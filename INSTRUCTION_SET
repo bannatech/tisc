@@ -1,4 +1,4 @@
-TISCv2.0 (c) Paul Longtine <paul@nanner.co>
+TISCv2.3 (c) Paul Longtine <paul@nanner.co>
 Tiny Instruction Set Computer
 
  __________   ___      ________       ________
@@ -7,7 +7,7 @@ Tiny Instruction Set Computer
      \ \  \   \ \  \   \ \_____  \    \ \  \
       \ \  \   \ \  \   \|____|\  \    \ \  \____
        \ \__\   \ \__\    ____\_\  \    \ \_______\
-        \|__|    \|__|   |\_________\    \|_______| v2.2
+        \|__|    \|__|   |\_________\    \|_______| v2.3
                          \|_________|
 
 -----------------------------------------------------------------------<--------
@@ -35,9 +35,12 @@ C B 0010 - CIN        ----- C = ++B
 10010011 - PSH        ----- Push GRA to stack
 10100011 - POP        ----- Pop stack to reg GRA
 10110011 - PEEK       ----- Peek stack to reg GRA
+10000111 - LBS        ----- Load word from mem pointer to stack
 10B 0111 - LB         ----- Load word from mem pointer to ARGB GPR
+10001011 - SBS        ----- Pop stack and store to mem pointer
 10B 1011 - SB         ----- Store contents of ARGB GPR to mem pointer
-10B 1111 - SP         ----- Set pointer ARGB GPR
+10001111 - SPS        ----- Pop stack and set mem pointer
+10B 1111 - SP         ----- Set pointer ARGB GPR 
 11B A 11 - CMP        ----- Computes flag on set operation
 
 -----------------------------------------------------------------------<--------

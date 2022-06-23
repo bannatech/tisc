@@ -1,19 +1,23 @@
-# This program is a fun test that will write the address of the jmp statement
-# on line number 15 if we're running this bit of code from the internal RAM
-# It can only run from the internal RAM as it doesn't write out to the Program
-# Memory, only the Internal RAM which can also execute code if set up correctly
-start:  nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        pcr
-        lli 5
-        mov GRA GRC
-        pop
-        op GRA GRC GRA
-        cin GRA GRB
-        sp GRB
-        sb GRA
-        jmp start
+# weird_loop_test - exemplifies the ability to modify executing memory when the
+#                   program is running from the internal RAM instead of an
+#                   external ROM. The program will calculate two addresses that
+#                   are used to write out to memory, overwriting the jmp address
+start: jmp weird
+loop:  jmp loop
+# offset this bit of code
+       segment 0x42
+# push the return address
+weird: pcr
+# calculate the memory address, and the jump address we will use
+       lli 5
+       mov GRA GRC
+# these instructions calculate the jump address
+       pop
+       op GRA GRC GRA
+# this instruction calculates the memory address (+1 from the jump address)
+       cin GRA GRB
+# write out to memory now that we know our memory address + jump address
+       sp GRB
+       sb GRA
+# after the last two instructions, this instruction will jump to itself.
+       jmp loop

@@ -3,17 +3,17 @@
 This is a for-fun implementation of a relatively simple micro-architecture, with
 an assembler to program the simulated implementation in [Logisim](http://www.cburch.com/logisim/).
 
-![TISC v2.2](Screenshots/tiscv2_2.png)
+![TISC v2.3](Screenshots/tiscv2_3.png)
 
 ## Want to play with it too?
 
 The default program loaded in the ExampleConfigurationROM circuit is the
 `ExamplePrograms/terminal_test.tac` program. The program is an interactive demo
 which processes text input from the keyboard component and echoes the text out
-to the TTY component. In addition, the program buffers 32 characters and tests
-the buffer once the user inputs a line feed (enter key) against a target string.
+to the TTY component. In addition, the program buffers 32 characters tests for
+command strings with routines to execute if the buffer contains a command string.
 
-![TISC Example configuration](Screenshots/tiscv2_2_example.png)
+![TISC Example configuration](Screenshots/tiscv2_3_example.png)
 
 ## Compiling the assembler
 

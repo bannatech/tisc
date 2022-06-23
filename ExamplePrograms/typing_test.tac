@@ -1,6 +1,8 @@
-# This program reads the input from the 'keyboard' component and records in a
-# buffer until the user presses the return key, at that point it dumps the
-# buffer.
+# typing_test.tac - test program that reads from the keyboard component, echoes
+#                   input and records the buffer in RAM. Once the user returns,
+#                   it plays back the buffer. Handles backspaces and typing
+#                   beyond the buffer limit.
+#                   Uses the ExampleConfigurationROM circuit
 ###################### Set up our buffer pointer to live in GRC
 setup:  li 32
         mov GRA GRC
