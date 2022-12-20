@@ -25,7 +25,7 @@ p_loop: lb GRB
 ###################### Clears the byte out of the buffer in the keyboard
         sb GRA
 ###################### Did we read a backspace character? If so, handle that
-        lli 8 # ascii BS
+        li 8 # ascii BS
         cmp GRA GRB
         jmp bcksp
 ###################### Echo the byte
@@ -34,13 +34,13 @@ p_loop: lb GRB
         sp GRC
         sb GRB
 ###################### Increment the buffer pointer
-        cin GRC GRC
+        incr GRC GRC
 ###################### If we have reached the end of the buffer, restart
         li 110 # max buffer size = 78, 32 + 78 = 110
         cmp GRA GRC
         jmp setup
 ###################### If the user pressed the enter key, output the buffer
-        lli 10 # ascii LF
+        li 10 # ascii LF
         cmp GRB GRA
         jmp cmpr
         jmp poll
@@ -52,7 +52,7 @@ bcksp:  li 32 # buffer pointer
 ###################### Echo the byte
         sb GRB
 ###################### Decrement the buffer pointer and start polling again
-        lli 1
+        li 1
         sop_sub
         op GRC GRA GRC
         jmp poll
@@ -66,10 +66,11 @@ cmpr: li 32 # buffer pointer
       push
       sop_sub
       op GRC GRA GRC
-      lli 0x01
+      li 0x01
       sp GRA
       sb GRC
-      ptrinc
+      incr GRA GRA
+      sp GRA
       sbs
 ############ Respond to 'ping' with 'pong'
 #         "ping\n\0", length 5
@@ -137,15 +138,16 @@ n2:    lni 0x0,0xa,0x72,0x61,0x65,0x6c,0x63,6
 #     0x0 - used for the return pointer address
 #     0x1 - buffer length
 #     0x2 - buffer pointer
-cmpr_f:  lli 0x0 # return pointer memory address
+cmpr_f:  li 0x0 # return pointer memory address
          sp GRA
 ######## Store the return pointer
          sbs
-         lli 0x01 # buffer length / pointer
+         li 0x01 # buffer length / pointer
          sp GRA
 ######## Get the buffer length + start address
          lb GRC
-         ptrinc
+         incr GRA GRA
+         sp GRA
          lb GRB
          sp GRB
 ######## If the length of our string does not match our buffer,
@@ -153,8 +155,9 @@ cmpr_f:  lli 0x0 # return pointer memory address
          pop
          sop_xor
          cmp GRC GRA
-         jmp c_loop
+         jmp c_cmpr
          jmp c_fail
+c_cmpr: mov GRB GRC
 c_loop: pop
 ######## Test if we've reached the end of our comparision buffer.
 ######## If we've reached the end and haven't branched out, then
@@ -163,7 +166,8 @@ c_loop: pop
         jmp c_match
         lb GRB
 ######## Increment our buffer pointer
-        ptrinc
+        incr GRC GRC
+        sp GRC
 ######## If the bytes match, continue looping
         cmp GRB GRA
         jmp c_loop
@@ -173,9 +177,9 @@ c_fail: pop         # Flush the stack until we get the null byte
         jmp c_r     # if null, return
         jmp c_fail  # else continue flushing
 # Return true
-c_match: lli 0x01
+c_match: li 0x01
 c_r:    mov GRA GRB
-        lli 0x0
+        li 0x0
         sp GRA
         lb GRA
         goto

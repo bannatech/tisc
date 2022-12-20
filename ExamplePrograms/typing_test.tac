@@ -22,20 +22,20 @@ p_loop: lb GRB
 ###################### Clears the byte out of the buffer in the keyboard
         sb GRA
 ###################### Did we read a backspace character? If so, handle that
-        lli 8
+        li 8
         cmp GRA GRB
         jmp bcksp
 ###################### Write the byte in the buffer in RAM
         sp GRC
         sb GRB
 ###################### Increment the buffer pointer
-        cin GRC GRC
+        incr GRC GRC
 ###################### If we have reached the end of the buffer, restart
         li 112
         cmp GRA GRC
         jmp setup
 ###################### If the user pressed the enter key, output the buffer
-        lli 10
+        li 10
         cmp GRB GRA
         jmp output
         jmp poll
@@ -45,7 +45,7 @@ bcksp:  li 32
         cmp GRA GRC
         jmp poll
 ###################### Decrement the buffer pointer
-        lli 1
+        li 1
         sop_sub
         op GRC GRA GRC
         jmp poll
@@ -58,7 +58,7 @@ o_loop: sp GRA
         sp GRA
         sb GRB
         pop
-        cin GRA GRA
+        incr GRA GRA
         cmp GRA GRC
         jmp setup
         jmp o_loop

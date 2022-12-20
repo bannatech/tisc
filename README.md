@@ -3,7 +3,7 @@
 This is a for-fun implementation of a relatively simple micro-architecture, with
 an assembler to program the simulated implementation in [Logisim](http://www.cburch.com/logisim/).
 
-![TISC v2.3](Screenshots/tiscv2_3.png)
+![TISC v2.4](Screenshots/tiscv2_4.png)
 
 My goal with this project is to aim for an instruction set architecture that is
 focused on minimal scale. I've [written about the first ressurection of this
@@ -16,12 +16,12 @@ this repository.
 ## Want to play with it too?
 
 The default program loaded in the ExampleConfigurationROM circuit is the
-`ExamplePrograms/terminal_test.tac` program. The program is an interactive demo
+`ExamplePrograms/expanded_terminal.tac` program. The program is an interactive demo
 which processes text input from the keyboard component and echoes the text out
 to the TTY component. The 32 characters are buffered and compared to existing
 command strings with routines to execute per each command string.
 
-![TISC Example configuration](Screenshots/tiscv2_3_example.png)
+![TISC Example configuration](Screenshots/tiscv2_4_example.png)
 
 ## Compiling the assembler
 
@@ -41,26 +41,24 @@ program that is ready to load into the Logisim circuit.
 A successful output will appear like this:
 
 	$ ./tisc ExamplePrograms/fibb_test.tac out
-	Assembling tac file: 'ExamplePrograms/fibb_test.tac' TISC v2.3
+	Assembling tac file: 'ExamplePrograms/fibb_test.tac' TISC v2.4
 	label line  addr:out>op         args
-	      0003  0000:43| li 254
-	            0001:fe| +
+	      0003  0000:43| li 0xFD
+	            0001:fd|
 	      0004  0002:9f| sp GRA
-	      0006  0003:c2| cin        NIL     GRC
+	      0006  0003:c2| one        GRC
 	loop  0008  0004:ab| sb GRB
-	      0010  0005:30| sop_xor
-	      0011  0006:fa| op GRB     GRC     GRC
-	      0012  0007:ba| op GRB     GRC     GRB
-	      0013  0008:fa| op GRB     GRC     GRC
-	      0015  0009:00| sop_add
-	      0016  000a:ba| op GRB     GRC     GBR
-	      0018  000b:fb| cmp        GRB     GRC
-	      0019  000c:83| jmp        loop
-	            000d:04| +
-	      0021  000e:ab| sb GRB
-	end   0022  000f:83| jmp        end
-	end         0010:0f| +
-	Finished assembling tac file: 'ExamplePrograms/fibb_test.tac', program size: 17 bytes
+	      0010  0005:c9| xor        GRB GRC
+	      0011  0006:cd| xor        GRC GRC
+	      0012  0007:c9| xor        GRB GRC
+	      0014  0008:ba| op GRB GRC GRB
+	      0016  0009:fb| cmp        GRB GRC
+	      0017  000a:83| jmp        loop
+	            000b:04|
+	      0019  000c:ab| sb GRB
+	end   0020  000d:83| jmp        end
+	end         000e:0d|
+	Finished assembling tac file: 'ExamplePrograms/fibb_test.tac', program size: 15 bytes
 
 ## Loading a program
 

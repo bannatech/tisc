@@ -3,13 +3,14 @@
 #include <stdint.h>
 #include <string.h>
 
-#define VERSION_STRING "v2.3"
-#define TOT_INSTRUCTIONS 33
+#define VERSION_STRING "v2.4"
+#define TOT_INSTRUCTIONS 43
 #define MAX_SYMBOLS    1000
 #define MAX_SYMBOL_LEN 100
 #define MAX_LINE_LEN   100
 #define MAX_PGR_SIZE   0xFFFF
 #define MAX_LNI_SIZE   17
+#define MAX_MNB_SIZE   17
 
 #define NR          0x0
 #define NR_STRING   "NIL"
@@ -248,6 +249,18 @@ int assemble_1arg(
 	return 1;
 }
 
+int assemble_1argc(
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer,
+	int address)
+{
+	uint8_t argC = getRegisterEnumeration(arg[0]);
+	
+	write_buffer[0] = definition->opcode_mask | (argC << 6);
+
+	return 1;
+}
+
 int assemble_2arg(
 	InstructionDefinition_t *definition,
 	char* arg[3], uint8_t* write_buffer,
@@ -265,7 +278,7 @@ int assemble_2arg(
 	return 1;
 }
 
-int assemble_cin(
+int assemble_2argb(
 	InstructionDefinition_t *definition,
 	char* arg[3], uint8_t* write_buffer,
 	int address)
@@ -282,7 +295,7 @@ int assemble_cin(
 	return 1;
 }
 
-int assemble_mov(
+int assemble_2arga(
 	InstructionDefinition_t *definition,
 	char* arg[3], uint8_t* write_buffer,
 	int address)
@@ -317,25 +330,25 @@ int assemble_3arg(
 	return 1;
 }
 
-int assemble_lli(
+int assemble_mnb(
 	InstructionDefinition_t *definition,
 	char* arg[3], uint8_t* write_buffer,
 	int address)
 {
 	int return_value = 0;
 	
-	int immediate_value = stringToInteger(arg[0]);
+	int byte_length = stringToInteger(arg[0]);
 
-	if ((immediate_value & 0xF0) == 0)
+	if (byte_length > 0 && byte_length < MAX_MNB_SIZE)
 	{
-		write_buffer[0] = definition->opcode_mask | immediate_value << 2;
+		write_buffer[0] = definition->opcode_mask | (byte_length - 1) << 2;
 
 		return_value = 1;
 	}
 	else
 	{
-		printf("FATAL: Value provided is invalid: (%i)", immediate_value);
-		printf("FATAL: Value must not be > 15");
+		printf("FATAL: Value provided is invalid: (%i)", byte_length);
+		printf("FATAL: Value must be < %i && > 0", MAX_MNB_SIZE);
 	}
 
 	return return_value;
@@ -375,47 +388,54 @@ int assemble_lni(
 
 	int byte_len = 0;
 	int bytes[MAX_LNI_SIZE];
-	if (arg[0][0] == '"')
-	{
-		for (int i = 1; arg[0][i] != '\0'; i++)
-		{
-			
-		}
+	int arg_str_len = strlen(arg[0]);
+	if (arg_str_len == 0) {
+		printf("FATAL: must provide byte array length > 1\n");
+		return 1;
 	}
-	else
+	char* arg_str = (char*)malloc(sizeof(char) * arg_str_len + 1);
+	char* byte_str = strcpy(arg_str, arg[0]);
+	byte_str = strtok(byte_str, ",");
+	while (byte_str != NULL)
 	{
-		char* arg_copy = (char*)malloc(sizeof(char) * strlen(arg[0]));
-		strcpy(arg_copy, arg[0]);
-		char* byte_str = strtok(arg_copy, ",");
-	
-		while (byte_str != NULL)
-		{
-			int value = stringToInteger(byte_str);
-	
-			if (value > 255 || value < 0)
-			{
-				byte_len = 0;
-				printf("FATAL: value provided is invalid %i\n", value);
-				break;
-			}
-	
-			byte_str = strtok(NULL, ",");
-			if (byte_len < MAX_LNI_SIZE)
-			{
-				bytes[byte_len] = value;
-			}
-			byte_len++;
-		}
-	
-		free(arg_copy);
-	}
+		int label = label_address(arg[0]);
+		int value = -1;
 
-	if (byte_len <= 1)
+		if (label != -1) {
+			value = label;
+		} else {
+			value = stringToInteger(byte_str);
+		}
+	
+		if (value > 255 || value < 0)
+		{
+			byte_len = -1;
+			printf("FATAL: value provided is invalid %i\n", value);
+			break;
+		}
+
+		byte_str = strtok(NULL, ",");
+		if (byte_len < MAX_LNI_SIZE)
+		{
+			bytes[byte_len] = value;
+		}
+		byte_len++;
+
+	}
+	free(arg_str);
+
+	if (byte_len < 0) {
+		printf("FATAL: error while parsing");
+	}
+	else if (byte_len <= 1)
 	{
 		printf("FATAL: must provide byte array length > 1\n");
+	} else if ((address&0xFF) > ((address+byte_len)&0xFF)) {
+		printf("FATAL: instruction overflows least significant address byte: %04x -> %04x\n", address, (address+byte_len));
+		printf("FATAL: this may cause unintended behavior, realign instruction\n");
+		return_value = 0;
 	}
-
-	if (byte_len > 1 && byte_len < MAX_LNI_SIZE)
+	else if (byte_len > 1 && byte_len < MAX_LNI_SIZE)
 	{
 		definition->instructionLength = byte_len + 1;
 
@@ -425,13 +445,12 @@ int assemble_lni(
 		{
 			write_buffer[i] = bytes[i - 1];
 		}
-
 		return_value = 1;
 	}
 	else
 	{
-		printf("FATAL: byte array has too many elements. length must be <= %i\n", MAX_LNI_SIZE);
-		printf("FATAL:                                            length = %i\n", byte_len);
+		printf("FATAL: byte array has too many elements. length must be < %i\n", MAX_LNI_SIZE);
+		printf("FATAL:                                           length = %i\n", byte_len);
 	}
 
 	return return_value;
@@ -461,7 +480,25 @@ int assemble_jmp(
 	return return_value;
 }
 
-int segment(
+int zero(
+	InstructionDefinition_t *definition,
+	char* arg[3], uint8_t* write_buffer,
+	int address)
+{
+	int return_value = 0;
+
+	uint8_t argA;
+
+	argA = getRegisterEnumeration(arg[0]);
+
+	write_buffer[0] = definition->opcode_mask;
+
+	write_buffer[0] |= ( argA << 2) | ( argA << 6);
+	
+	return 1;
+}
+
+int space(
 	InstructionDefinition_t *definition,
 	char* arg[3], uint8_t* write_buffer,
 	int address)
@@ -474,9 +511,12 @@ int segment(
 		definition->instructionLength = target_address - address;
 		return_value = 1;
 	}
+	else if (target_address <= address) {
+		printf("Space preceeds current program address (%i)\n", address);
+	}
 	else
 	{
-		printf("Segment address must be less than %i\n", MAX_PGR_SIZE);
+		printf("address must be less than %i\n", MAX_PGR_SIZE);
 	}
 
 	return return_value;
@@ -508,40 +548,53 @@ int getlabel(
 
 InstructionDefinition_t definitions[TOT_INSTRUCTIONS] =
 {
-	//opcode,args,size,byte,func 
-	{ "getlabel",  1, 2, 0x43, getlabel      },
-	{ "segment",   1, 0, 0x00, segment       },
-	{ "nop",       0, 1, 0x00, assemble_0arg },
-	{ "push",      0, 1, 0x93, assemble_0arg },
-	{ "pop",       0, 1, 0xA3, assemble_0arg },
-	{ "peek",      0, 1, 0xB3, assemble_0arg },
-	{ "lbs",       0, 1, 0x87, assemble_0arg },
-	{ "sbs",       0, 1, 0x8B, assemble_0arg },
-	{ "sps",       0, 1, 0x8F, assemble_0arg },
-	{ "sop_add",   0, 1, 0x00, assemble_0arg },
-	{ "sop_sub",   0, 1, 0x10, assemble_0arg },
-	{ "sop_and",   0, 1, 0x20, assemble_0arg },
-	{ "sop_xor",   0, 1, 0x30, assemble_0arg },
-	{ "sop_xnor",  0, 1, 0x40, assemble_0arg },
-	{ "sop_cin",   0, 1, 0x50, assemble_0arg },
-	{ "sop_lsh",   0, 1, 0x60, assemble_0arg },
-	{ "sop_rsh",   0, 1, 0x70, assemble_0arg },
-	{ "goto",      0, 1, 0x90, assemble_0arg },
-	{ "pcr",       0, 1, 0xA0, assemble_0arg },
-	{ "ptrinc",    0, 1, 0xF0, assemble_0arg },
-	{ "lli",       1, 1, 0x03, assemble_lli  },
-	{ "lni",       1, 1, 0x43, assemble_lni  },
-	{ "li",        1, 2, 0x43, assemble_li   },
-	{ "jmp",       1, 2, 0x83, assemble_jmp  },
-	{ "lb",        1, 1, 0x87, assemble_1arg },
-	{ "sb",        1, 1, 0x8B, assemble_1arg },
-	{ "sp",        1, 1, 0x8F, assemble_1arg },
-	{ "cin",       2, 1, 0x02, assemble_cin  },
-	{ "mov",       2, 1, 0x00, assemble_mov  },
-	{ "cmp",       2, 1, 0xC3, assemble_2arg },
-	{ "or",        3, 1, 0x00, assemble_3arg },
-	{ "nand",      3, 1, 0x01, assemble_3arg },
-	{ "op",        3, 1, 0x02, assemble_3arg }
+	// abstract instructions - assembler specific
+	//opcode,   args,size,byte,assembler
+	{ "getlabel",  1, 2, 0x43, getlabel       },
+	{ "space",     1, 0, 0x00, space          },
+	{ "zero",      1, 1, 0x01, zero           },
+	{ "mov",       2, 1, 0x00, assemble_2arga },
+	// 1:1 instructions
+	//opcode,   args,size,byte,assembler
+	{ "push",      0, 1, 0x93, assemble_0arg  },
+	{ "pop",       0, 1, 0xA3, assemble_0arg  },
+	{ "peek",      0, 1, 0xB3, assemble_0arg  },
+	{ "lbs",       0, 1, 0x87, assemble_0arg  },
+	{ "sbs",       0, 1, 0x8B, assemble_0arg  },
+	{ "sps",       0, 1, 0x8F, assemble_0arg  },
+	{ "sop_add",   0, 1, 0x00, assemble_0arg  },
+	{ "sop_sub",   0, 1, 0x10, assemble_0arg  },
+	{ "sop_and",   0, 1, 0x20, assemble_0arg  },
+	{ "sop_xor",   0, 1, 0x30, assemble_0arg  },
+	{ "sop_pcnt",  0, 1, 0x40, assemble_0arg  },
+	{ "sop_cin",   0, 1, 0x50, assemble_0arg  },
+	{ "sop_lsh",   0, 1, 0x60, assemble_0arg  },
+	{ "sop_rsh",   0, 1, 0x70, assemble_0arg  },
+	{ "goto",      0, 1, 0x80, assemble_0arg  },
+	{ "pcr",       0, 1, 0x90, assemble_0arg  },
+	{ "seg",       0, 1, 0xA0, assemble_0arg  },
+	{ "mnb_noincr",0, 1, 0xB0, assemble_0arg  },
+	{ "mnb_incr",  0, 1, 0xC0, assemble_0arg  },
+	{ "mnb_decr",  0, 1, 0xD0, assemble_0arg  },
+	{ "mnb_store", 0, 1, 0xE0, assemble_0arg  },
+	{ "mnb_load",  0, 1, 0xF0, assemble_0arg  },
+	{ "mnb",       1, 1, 0x03, assemble_mnb   },
+	{ "lni",       1, 1, 0x43, assemble_lni   },
+	{ "li",        1, 2, 0x43, assemble_li    },
+	{ "jmp",       1, 2, 0x83, assemble_jmp   },
+	{ "lb",        1, 1, 0x87, assemble_1arg  },
+	{ "sb",        1, 1, 0x8B, assemble_1arg  },
+	{ "sp",        1, 1, 0x8F, assemble_1arg  },	
+	{ "cmp",       2, 1, 0xC3, assemble_2arg  },
+	{ "or",        3, 1, 0x00, assemble_3arg  },
+	{ "nand",      3, 1, 0x01, assemble_3arg  },
+	{ "and",       2, 1, 0x01, assemble_2argb },
+	{ "xor",       2, 1, 0x01, assemble_2arga },
+	{ "ptradd",    1, 1, 0x01, assemble_1argc },
+	{ "op",        3, 1, 0x02, assemble_3arg  },
+	{ "incr",      2, 1, 0x02, assemble_2argb },
+	{ "decr",      2, 1, 0x02, assemble_2arga },
+	{ "one",       1, 1, 0x02, assemble_1argc },
 };
 
 InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
@@ -561,6 +614,26 @@ InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
 	}
 
 	return return_value;
+}
+
+void printnear(int target, FILE *file, char *line)
+{
+	printf("\n");
+	rewind(file);
+	int start = target - 3;
+	int end = target + 3;
+	char *str;
+	int ln = 0;
+	do {
+		str = fgets(line, MAX_LINE_LEN, file);
+		ln++;
+		if (str != NULL && (ln >= start && ln <= end))
+		{
+			int it = ln == target;
+			printf("\t%s%i%s %s", (it) ? ">":" ", ln, (it) ? "<":" ", str);
+		}
+	} while (str != NULL);
+	printf("\n");
 }
 
 /* char *parse -> parses file and sets label, opcode, and args
@@ -695,7 +768,7 @@ int preprocess(int line, int *address, char *label, char *opcode, char *arg[3])
    machine code with symbols filled in as adresses,
    fails if returns -1 */
 int process(
-	int line, int* address, uint8_t *buffer, char *label, char *opcode, char *arg[3]) 
+	int line, int* address, uint8_t *buffer, char *label, char *opcode, char *arg[3])
 {
 	int status = 0;
 
@@ -735,28 +808,33 @@ void print_instruction_header(int label_width)
 void print_instruction(int line, int begin_address, int end_address, uint8_t *buffer, char *label, char *opcode, char *arg[3], int label_width)
 {
 	int len = 0;
-	for (int i = 0; arg[i] != NULL && i < 3; i++)
+
+	InstructionDefinition_t* ins = getInstructionFromOpcode(opcode);
+	for (int i = 0; arg[i] != NULL && i <= ins->arguements; i++)
 	{
 		len += strlen(arg[i]) + 1;
 	}
 	char* arg_str = "";
 	if (len > 0)
 	{
-		arg_str = (char*)malloc(sizeof(char) * len);
-
+		arg_str = (char*)malloc(sizeof(char) * len + 1);
 		for (int i = 0; i < len; i++)
 		{
-			arg_str[i] = '\0';
+			arg_str[i] = ' ';
 		}
 
+		int tlen = 0;
 		for (int i = 0; i < 3; i++)
 		{
 			if (arg[i] == NULL || arg[i][0] == '#')
 			{
 				break;
 			}
-			sprintf(arg_str, "%s%s\t", arg_str, arg[i]);
+			char* t = arg_str+tlen;
+			strncpy(t, arg[i], strlen(arg[i]));
+			tlen += strlen(arg[i]) + 1;
 		}
+		arg_str[len] = '\0';
 	}
 
 	char* label_str = (char*)malloc(sizeof(char) * (label_width + 1));
@@ -775,10 +853,16 @@ void print_instruction(int line, int begin_address, int end_address, uint8_t *bu
 	uint8_t *this_buffer = buffer + begin_address;
 
 	printf("%s %04i  %04x:%02x| %s\t%s\n", label_str, line + 1, begin_address, this_buffer[0], opcode, arg_str);
+	int eqflag = 0;
 	for (int i = 1; i < this_size; i++)
 	{
-		printf("%s       %04x:%02x| +\n", label_str, begin_address + i, this_buffer[i]);
+		int dupe = i > 1 && i + 1 < this_size && this_buffer[i-1] == this_buffer[i] && this_buffer[i] == this_buffer[i+1];
+		if (eqflag == 0 || dupe == 0) {
+			printf("%s       %04x:%02x| %s\n", label_str, begin_address + i, this_buffer[i], (dupe) ? "+" : "");
+		}
+		eqflag = dupe;
 	}
+
 	free(label_str);
 	if (strlen(arg_str) != 0)
 	{
@@ -814,6 +898,13 @@ int main(int argc, char *argv[])
 	char line[MAX_LINE_LEN + 1];
 	int address = 0, line_number = 0;
 
+	for (int i = 0; i < MAX_LINE_LEN+1; i++) {
+		line[i] = '\0';
+	}
+	args[0] = NULL;
+	args[1] = NULL;
+	args[2] = NULL;
+
 	input = argv[1];
 	inputf = fopen(input, "r");
 
@@ -837,6 +928,7 @@ int main(int argc, char *argv[])
 	{
 		if (labelprocess(line_number, &address, label, opcodes, args) == 0)
 		{
+			printnear(line_number, inputf, line);
 			printf("Labelprocess: Error on line #%i\n", line_number);
 
 			goto CLOSEFILES;
@@ -850,8 +942,11 @@ int main(int argc, char *argv[])
 
 	while (parse(&line_number, inputf, line, &label, &opcodes, args))
 	{
+		int begin_address = address;
+		int begin_line = line_number;
 		if (preprocess(line_number, &address, label, opcodes, args) == 0)
 		{
+			printnear(line_number, inputf, line);
 			printf("Preprocess: Error on line #%i\n", line_number);
 
 			goto CLOSEFILES;
@@ -870,6 +965,9 @@ int main(int argc, char *argv[])
 	}
 	
 	uint8_t* w_buffer = (uint8_t*)malloc(sizeof(uint8_t) * full_size);
+	for (int i = 0; i < full_size; i++) {
+		w_buffer[i] = 0;
+	}
 
 	if (w_buffer != NULL)
 	{
@@ -886,6 +984,7 @@ int main(int argc, char *argv[])
 			int begin_line = line_number;
 			if (process(line_number, &address, w_buffer, label, opcodes, args) == 0)
 			{
+				printnear(line_number, inputf, line);
 				printf("Process: Error on line #%i\n", line_number);
 				free(w_buffer);
 				goto CLOSEFILES;

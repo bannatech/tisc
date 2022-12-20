@@ -1,4 +1,4 @@
-TISCv2.3 (c) Paul Longtine <paul@nanner.co>
+TISCv2.4 (c) Paul Longtine <paul@nanner.co>
 Tiny Instruction Set Computer
 
  __________   ___      ________       ________
@@ -7,63 +7,179 @@ Tiny Instruction Set Computer
      \ \  \   \ \  \   \ \_____  \    \ \  \
       \ \  \   \ \  \   \|____|\  \    \ \  \____
        \ \__\   \ \__\    ____\_\  \    \ \_______\
-        \|__|    \|__|   |\_________\    \|_______| v2.3
+        \|__|    \|__|   |\_________\    \|_______| v2.4
                          \|_________|
 
 -----------------------------------------------------------------------<--------
-  The Architecture of TISC
+ 0  The Architecture of the TISC
 -----------------------------------------------------------------------<--------
 
-The basic architecture of TISC resembles a Von-Neumann architecture with a an 8-bit
-address space and an 8-bit word. The execution of instructions and input data is
-conditionally sourced from external input or internal RAM. Internally the data loop
-has two primary busses: Register Input bus, and the ALU Output bus.
+The tisc uses an 8-bit word for each instruction, and the bus width is 8-bits.
+The Address width is more complicated, but the program counter operates with
+an 8-bit width also. The nuances of this are detailed in the rom_segments.tac
+program.
 
-There are a total of 10 busses with 7 distinct busses which compose to allow data
-to move through the architecture.
+At its core, a data loop is implemented for supporting logical and arithmetic
+operations on state, as well as generating a flag to support conditional
+branching. The main input and output busses revolve around this data loop.
+
+-----------------------------------------------------------------------<--------
+ 1 Internal State
+-----------------------------------------------------------------------<--------
+
+With each instruction that is executed, it is helpful to have a mental model of
+how the internal state is changed by each instruction. A place to start is to
+introduce the stateful components of the architecture.
+
+There are 8 stateful components which the programmer must keep in mind:
+
+ * General Purpose Registers [ GRA, GRB, GRC ] (most instructions)
+
+   - These registers read into the ALU and support most operations in the tisc
+
+ * Stack (push, pop, peek, sps, lbs, sbs, mnb, lni)
+
+   - First-class memory abstraction
+
+ * Program Counter (jmp, goto, pcr)
+
+   - Keeps track of where we are in the instruction space
+
+ * Operation Mode Register (op, cmp, sop_*)
+
+   - Allows many arithmetic and logical operations to occur on the data loop
+
+ * MNB Mode Register (mnb, mnb_*)
+
+   - Determines the mode and direction of the mnb instruction
+             (load/store) + (noincr/incr/decr)
+
+ * Conditional Flag Register (cmp, nand, or, xor, and, ptradd, incr, decr)
+
+   - There is only one flag used for conditional branches for simplicities sake,
+     conditional jumps rely on only one flag. This flag is set dependent on the
+     operation being performed.
+
+ * Memory Segment Register (seg)
+
+   - Selects which segment of memory to operate within, allowing a larger
+     address space
+
+ * Memory Pointer Register (sp, sps, ptradd, mnb)
+
+   - The address that points to the memory to be read and written to by lb, sb,
+     and mnb instructions.
+
+-----------------------------------------------------------------------<--------
+ 2 Data Busses
+-----------------------------------------------------------------------<--------
+
+There are a total of 11 busses with 7 distinct busses which compose to allow
+data to move through the architecture. A distinct bus means that the value on
+the bus originates from a single source, and a derived bus is one which uses
+multiple busses to create a single value, mostly through multiplexing or forming
+a larger bus width by combining busses.
 
 The 7 distinct data busses (in no particular order) are as follows:
 
-0* ALU Output Bus
-1* Stack Output Bus
-2* Immediate Bus
-3* Program Counter Output Bus
-4* Memory Pointer Bus
-5* Memory Output Bus
-6* External Input Bus
+0*  ALU Output Bus
+1*  Stack Output Bus
+2*  PC Address Bus
+4*  Memory Pointer Bus
+8*  Memory Output Bus
+6*  External Input Bus
+10* Memory Segment Bus
 
-The 3 multiplexed data busses are as follows:
+The 4 derived data busses are as follows:
 
-7* The Register Input bus is multiplexed from 4 busses:
+3* PC Output Bus is derived from 2 busses:
+ 2* PC Address Bus
+ 0* ALU Output Bus
+
+5* The Address Bus is derived from 3 busses:
+ 3*  PC Output Bus
+ 4*  Memory Pointer Bus
+ 10* Memory Segment Bus
+
+7* The Register Input bus is derived from 4 busses:
  0* ALU Output Bus
  1* Stack Output Bus
- 2* Immediate Bus
+ 2* PC Address Bus
  9* Internal Input Bus
 
-8* The Address Bus is multiplexed from 2 busses:
- 3* Program Counter Output Bus
- 4* Memory Pointer Bus
-
-9* The Internal Input Bus is multiplexed from 2 busses:
- 5* Memory Output Bus
+9* The Internal Input Bus is derived from 2 busses:
+ 8* Memory Output Bus
  6* External Input Bus
 
-These multiplexed busses support the modularity of the system to implement external
-instruction memory and external memory mapped components to extend the capacity of
-a TISC core by controlling the source of each multiplexed bus.
+These derived busses support specific instructions to move data to the required 
+destination.
+
+For instance, when accessing memory with the lb instruction, the Address Bus is
+selecting the Memory Pointer Bus, rather than from the PC Address Bus.
 
 -----------------------------------------------------------------------<--------
-    External Interface
+ 3 Internal Components
 -----------------------------------------------------------------------<--------
 
-TISC is structured to be exensible through I/O context and persisting a common core
-across implementations
+There are 6 primary internal components which compose to form a tisc:
 
-The external interface of TISC has 8 distinct input/output ports
+ * Internal Memory
+   - Inputs: (5.Address Bus + 10.Memory Segment Bus), 0.ALU Output Bus
+   - Outputs: 8.Memory Output Bus
+
+   - The abstract interface to memory which allows data to be read and stored
+     outside of the general purpose registers and the stack
+
+ * Instruction Set Decoder (ISD)
+   - Inputs: 9.Internal Input Bus, 0.ALU Output Bus
+
+   - Outputs: 10.Memory Segment Bus, 4.Memory Pointer Bus
+
+   - Decodes instructions from the Internal Input Bus, each decoded instruction
+     resulting in a commanded state for a set of control lines to shepard data
+     around the architecture.
+ 
+ * General Purpose Registers
+
+   - Inputs: 7.Register Input Bus
+
+   - The memory which feeds into the ALU
+
+ *  ALU
+
+   - Outputs: 0.ALU Output Bus
+
+   - Provides limited arithmetic and logical operations, computes the flag
+
+ * STACK
+
+   - Inputs: 0.ALU Output Bus
+
+   - Outputs: 1.Stack Output Bus
+
+   - Provides a memory abstraction for pushing and popping on a stack.
+
+ * Program Counter
+
+   - Inputs: 0.ALU Output Bus, 9.Internal Input Bus
+
+   - Outputs: 3.PC Output Bus, 2.PC Address Bus
+
+-----------------------------------------------------------------------<--------
+ 4 External Interface
+-----------------------------------------------------------------------<--------
+
+The tisc is structured to be exensible through I/O context. Through persisting a
+common core and common instruction set, a tisc can have different capabilities
+depending on the available I/O context.
+
+The external interface of the tisc has 9 input/output ports which allow the tisc
+core to address external inputs.
 
 IO ACTIVE: boolean output
-	Raised when there is an externally mapped address currently selected to support
-	memory mapped IO.
+	Raised when there is an externally mapped address currently selected.
+	If memory mapped IO is supported at the address, IO ENABLE is raised.
+	
 	Known internally as the "External Address Select". The default address range
 	is 0xFC - 0xFF as memory mapped I/O ports.
 
@@ -82,14 +198,5 @@ OUTPUT: 8-bit output bus
 ADDRESS: 8-bit output bus
 	The current 8-bit program counter value, used to signal for external memory mapped IO
 
-CLOCK: sync. signal
-	core clock line
-
-RESET: sync. signal
-	reset core
-
-
-
-
-
-
+SEGMENT: 8-bit segment bus
+	The current 8-bit segment address value

@@ -1,4 +1,4 @@
-TISCv2.3 (c) Paul Longtine <paul@nanner.co>
+TISCv2.4 (c) Paul Longtine <paul@nanner.co>
 Tiny Instruction Set Computer
 
  __________   ___      ________       ________
@@ -7,42 +7,113 @@ Tiny Instruction Set Computer
      \ \  \   \ \  \   \ \_____  \    \ \  \
       \ \  \   \ \  \   \|____|\  \    \ \  \____
        \ \__\   \ \__\    ____\_\  \    \ \_______\
-        \|__|    \|__|   |\_________\    \|_______| v2.3
+        \|__|    \|__|   |\_________\    \|_______| v2.4
                          \|_________|
 
 -----------------------------------------------------------------------<--------
-RAW      - memonic - description
+RAW      - mnemonic       - description
 -----------------------------------------------------------------------<--------
-00000000 - SOP_ADD    ----- SetOp ADD, flag if overflow
-00010000 - SOP_SUB    ----- SetOp SUB, A-B and flag if sign is positive
-00100000 - SOP_AND    ----- SetOp AND, A&B and flag if the output is nonzero
-00110000 - SOP_XOR    ----- SetOp XOR, A^B and flag if the output is nonzero
-01000000 - SOP_XNOR   ----- SetOp XNOR, ~(A^B) and flag if the output is nonzero
-01010000 - SOP_CIN    ----- SetOp CIN, CMP will A+B+1 and flag if overflow
-01100000 - SOP_LSH    ----- SetOp LSH, lshift A by B bits, flag if overflow
-01110000 - SOP_RSH    ----- SetOp RSH, rshift A by B bits, flag if underflow 
-10010000 - GOTO       ----- Branches unconditionally to address stored in GRA
-10100000 - PCR        ----- Push program counter return address to stack
-11110000 - PTRINC     ----- Increment pointer by 1
-C B A 00 - OR         ----- C = A | B
-C B A 01 - NAND       ----- C = A nand B
-C B A 10 - OP         ----- C = A (OP) B - perform operation set by SOP_*
-C B 0010 - CIN        ----- C = ++B
-00<lo>11 - LLI        ----- Load lower immediate to GRA
-01000011 - LI         ----- Load byte immediate to GRA
-01<nb>11 - LNI        ----- Load <nb> length immediate to stack
-10000011 - JMP        ----- JMP to address in next program word if flag is false
-10010011 - PSH        ----- Push GRA to stack
-10100011 - POP        ----- Pop stack to reg GRA
-10110011 - PEEK       ----- Peek stack to reg GRA
-10000111 - LBS        ----- Load word from mem pointer to stack
-10B 0111 - LB         ----- Load word from mem pointer to ARGB GPR
-10001011 - SBS        ----- Pop stack and store to mem pointer
-10B 1011 - SB         ----- Store contents of ARGB GPR to mem pointer
-10001111 - SPS        ----- Pop stack and set mem pointer
-10B 1111 - SP         ----- Set pointer ARGB GPR
-11B A 11 - CMP        ----- Computes flag on set operation
+00000000 - SOP_ADD        - SetOp ADD,
+                            * flag if overflow
 
+00010000 - SOP_SUB        - SetOp SUB, A-B,
+                            * flag if result has a positive sign
+
+00100000 - SOP_AND        - SetOp AND, A&B,
+                            * flag if the result is nonzero
+
+00110000 - SOP_XOR        - SetOp XOR, A^B,
+                            * flag if the result is nonzero
+
+01000000 - SOP_PCNT       - SetOp PCNT, popcnt(A | B),
+                            * flag if popcnt(A) > popcnt(B)
+
+01010000 - SOP_CIN        - SetOp CIN, A+B+1,
+                            * flag if overflow
+
+01100000 - SOP_LSH        - SetOp LSH, lshift A by B bits ( A << B ),
+                            * flag if bits overflow
+
+01110000 - SOP_RSH        - SetOp RSH, rshift A by B bits ( A >> B ),
+                            * flag if bits underflow
+
+10000000 - GOTO           - Branches unconditionally to address stored in GRA
+
+10010000 - PCR            - Push program counter return address to stack
+
+10100000 - SEG            - Set memory segment from stack, and pop stack
+
+10110000 - MNB_NOINCR     - Do not increment memory pointer for mnb
+                            * mnb 4 -> move 4 bytes, at the same address
+
+11000000 - MNB_INCR       - Increment the memory pointer for mnb
+                            * mnb 4 -> move 4 bytes, at 4 addresses increasing
+
+11010000 - MNB_DECR       - Decrement the memory pointer for mnb
+                            * mnb 4 -> move 4 bytes, at 4 addresses decreasing
+
+11100000 - MNB_STORE      -  Pushes from the stack to the memory pointer
+                            * mnb 4 -> move 4 bytes, pushing to stack
+
+11110000 - MNB_LOAD       - Pops from the stack to the memory pointer
+                            * mnb 4 -> move 4 bytes, popping from the stack
+
+C B A 00 - OR             - C = A | B,
+                            * flag if result is nonzero
+
+C B A 01 - NAND           - C = A nand B,
+                            * flag if result is nonzero
+
+C B 0001 - AND            - C = C and B,
+                            * flag if result is nonzero
+
+C 00A 01 - XOR            - C = C xor A,
+                            * flag if output is nonzero
+
+C 000001 - PTRADD         - C = C + A and use result to set memory pointer
+                            * flag if overflow
+
+C B 0010 - INCR           - C = ++B
+                            * flag if overflow
+
+C 00A 10 - DECR           - C = --A
+                            * flag if result has a positive sign
+
+C 000010 - ONE            - C = 1
+
+C B A 10 - OP             - C = A (OP) B - perform operation set by SOP_*
+                            * flags are not set by OP, but instead by CMP
+
+00<nb>11 - MNB            - Move <nb> bytes, operation set by MNB_*
+
+01000011 - LI             - Load 1 word length immediate to GRA
+                            * immediate value is in the next program word
+
+01<nb>11 - LNI            - Load <nb>+1 word length immediate to stack
+                            * immediate is in the next <nb>+1 program words FILO
+
+10000011 - JMP            - JMP to address in next program word if flag is false
+
+10010011 - PUSH           - Push GRA to stack
+
+10100011 - POP            - Pop stack to GRA
+
+10110011 - PEEK           - Peek stack to GRA
+
+10000111 - LBS            - Load word at memory pointer address to stack
+
+10B 0111 - LB             - Load word at memory pointer address to ARGB GPR
+
+10001011 - SBS            - Pop stack and store at memory pointer address
+
+10B 1011 - SB             - Store contents of ARGB GPR at memory pointer address
+
+10001111 - SPS            - Pop stack and set memory pointer address
+
+10B 1111 - SP             - Set memory pointer address to contents of ARGB GPR
+
+11B A 11 - CMP            - A (OP) B and generate flag, OP set by SOP_*
+                            * Discards result
 -----------------------------------------------------------------------<--------
 C = Arguement C / ARGC
 B = Arguement B / ARGB

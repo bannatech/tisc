@@ -26,14 +26,14 @@ Please refer to the examples as reference.
 
  * `<GR>` specifies the argument type as a General Register
  	* The following types are accepted:
- 		* `GRA` General Purpose Register A
- 		* `GRB` General Purpose Register B
- 		* `GRC` General Purpose Register C
- 		* `NIL` No register referenced
+ 		* `GRA` General Register A = 0b01
+ 		* `GRB` General Register B = 0b10
+ 		* `GRC` General Register C = 0b11
+ 		* `NIL` No register    NIL = 0b00
 
  * `<label>` specifies the argument as a label
 
- * `<0-15>` `<0-255>` specifies an integer value
+ * `<1-16>` `<0-255>` specifies an integer value
  	* The following formats are accepted:
  		* Base 10
  		* Base 16: Prefixed with `0x`
@@ -67,18 +67,23 @@ Pops from the stack to use as the memory pointer
 
 	sps
 
-Set ADD Operation for `cmp` and `op` instructions. `cmp` will flag if there is 
-an overflow. `op` will perform addition.
+Set ADD Operation for `cmp` and `op` instructions.
+
+`op` will perform `C = A + B`.
+`cmp` will flag if `A + B` produces an overflow
 
 	sop_add
 
-Set SUBTRACT Operation for `cmp` and `op` instructions. `cmp` will flag if the 
-result has a positive sign. `op` will perform subtraction.
+Set SUBTRACT Operation for `cmp` and `op` instructions.
+
+`op` will perform `C = A - B`.
+`cmp` will flag if the `(A - B) >= 0`.
 
 	sop_sub
 
-Set AND Operation for `cmp` and `op` instructions. `cmp` will flag if the result
-is nonzero. `op` will perform bitwise AND.
+Set AND Operation for `cmp` and `op` instructions. 
+`op` will perform `C = A & B`.
+`cmp` will flag if `(A & B) != 0`.
 
 	sop_and
 
@@ -87,23 +92,31 @@ is nonzero. `op` will perform bitwise XOR.
 
 	sop_xor
 
-Set XNOR Operation for `cmp` and `op` instructions. `cmp` will flag if the 
-result is nonzero. `op` will perform bitwise XNOR.
+Set PCNT Operation for `cmp` and `op` instructions.
 
-	sop_xnor
+`op` will perform `popcount(A | B)` .
+`cmp` will flag if `popcount(A) > popcount(B)`.
 
-Set CIN Operation for `cmp` and `op` instructions. `cmp` will flag if there is
-an overflow. `op` will perform addition with the carry in set.
+	sop_pcnt
+
+Set CIN Operation for `cmp` and `op` instructions.
+
+`op` will perform `A + B + 1`.
+`cmp` will flag if there is an overflow.
 
 	sop_cin
 
-Set Left Shift operation for `cmp` and `op` instructions. `cmp` will flag if
-there is overflow. `op` will perform A << B.
+Set Left Shift operation for `cmp` and `op` instructions. 
+
+`op` will perform `A << B`.
+`cmp` will flag if there is overflow.
 
 	sop_lsh
 
-Set Right Shift operation for `cmp` and `op` instructions. `cmp` will flag if
-there is underflow. `op` will perform A >> B.
+Set Right Shift operation for `cmp` and `op` instructions.
+
+`op` will perform `A >> B`.
+`cmp` will flag if there is underflow.
 
 	sop_rsh
 
@@ -111,13 +124,37 @@ Program Counter Return Address - pushes program counter return address to stack
 
 	pcr
 
+Segment - set memory segment address from stack, and pop stack
+
+	seg
+
 Unconditionally branch to the address in `GRA`
 
 	goto
 
-Increment memory pointer (set with the `sp` instruction) by `1`
+Do not increment the memory pointer when peforming an mnb instruction.
 
-	ptrinc
+	mnb_noincr
+
+Increment the memory pointer when peforming an mnb instruction.
+
+> Example: `mnb 4` will increment the memory pointer by 4
+
+	mnb_incr
+
+Decrement the memory pointer when performing an mnb instruction.
+
+> Example: `mnb 4` will decrement the memory pointer by 4
+
+	mnb_decr
+
+Pushes on to the stack from the memory pointer when performing an mnb instruction.
+
+	mnb_load
+
+Pops from the stack to the memory pointer when performing an mnb instruction.
+
+	mnb_store
 
 ## 1 Argument Instructions
 
@@ -126,22 +163,18 @@ the label to use as an immediate
 
 	getlabel A<label>
 
-Load Lower Immediate to `GRA`, Least Significant 4 bits of a byte
-
-	lli A<0-15>
-
-Load Immediate to `GRA`, next byte in program memory is used
+Load Immediate to `GRA`
 
 	li A<0-255>
 
 Load `N` Bytes to `STACK`. `len(<bytes>)` must be > 1
-> Note: This instruction loads a set of bytes on to the stack, in string form
-or in byte array form
+
+> Example: `lni 0x1,0x2,0x3,4,5,6`
 
 	lni A<bytes>
 
-Jumps to particular label unless the flag is set by the `cmp` instruction
-executed prior to the `jmp` instruction. 
+Jumps to particular label unless the flag is set by the instruction executed
+prior to the `jmp` instruction.
 
 	jmp A<label>
 
@@ -157,31 +190,59 @@ Set the memory pointer from the specified register
 
 	sp A<GR>
 
+Move a number of bytes, the direction and behavior set by `mnb_*` instructions
+
+	mnb A<1-16>
+
+Set specified register `A` to 1
+
+	one A<GR>
+
+Zero specified register `A`
+
+	zero A<GR>
+
+Perform `A = A + GRA` and use the result to set memory pointer
+
+	ptradd A<GR>
+
 # 2 Argument Instructions
 
-Increment the specified register `A` and save in register `B` 
+Increment the specified register `A` and store in register `B`, flag if overflow
 
-	cin A<GR> B<GR>
+	incr A<GR> B<GR>
+
+Decrement the specified register `A` and store in register `B`, flag if postive
+
+	decr A<GR> B<GR>
+
+Logical AND the contents of `A` and `B`, store the result in `B`, flag if nonzero
+
+	and A<GR> B<GR>
+
+Logical XOR the contents of `A` and `B`, store the result in `B`, flag if nonzero
+
+	xor A<GR> B<GR>
 
 Move the contents of `A` to `B`
 
 	mov A<GR> B<GR>
 
-Compare `A` and `B` and generate a flag based on the current compare operation
+Perform the operation set with `sop_*`, discarding output, to generate a flag
 
 	cmp A<GR> B<GR>
 
 # 3 Argument Instructions
 
-Logical OR the contents of `A` and `B`, store the result in `C`
+Logical OR the contents of `A` and `B`, store the result in `C`, flag if nonzero
 
 	or A<GR> B<GR> C<GR>
 
-Logical NAND the contents of `A` and `B`, store the result in `C`
+Logical NAND the contents of `A` and `B`, store the result in `C`, flag if nonzero
 
 	nand A<GR> B<GR> C<GR>
 
-Perform the operation set with the `sop_*` opcode, with `A` and `B`, store the result in `C`
+Perform the operation set with `sop_*`, with `A` and `B`, store the result in `C`
 
 	op A<GR> B<GR> C<GR>
 
@@ -192,4 +253,4 @@ assembler
 
 Set the program address of the next instruction to the specified address in memory
 
-	segment A<0-255>
+	space A<0-255>
