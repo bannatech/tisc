@@ -5,13 +5,21 @@ an assembler to program the simulated implementation in [Logisim](http://www.cbu
 
 ![TISC v2.3](Screenshots/tiscv2_3.png)
 
+My goal with this project is to aim for an instruction set architecture that is
+focused on minimal scale. I've [written about the first ressurection of this
+project on my blog](https://banna.tech/post/dusty_digital_and_forgotten_ideas/)
+before and I am sporatically finding ways to explore the original idea of
+"minimal scale" through modifications and continuation of work contained within
+this repository.
+
+
 ## Want to play with it too?
 
 The default program loaded in the ExampleConfigurationROM circuit is the
 `ExamplePrograms/terminal_test.tac` program. The program is an interactive demo
 which processes text input from the keyboard component and echoes the text out
-to the TTY component. In addition, the program buffers 32 characters tests for
-command strings with routines to execute if the buffer contains a command string.
+to the TTY component. The 32 characters are buffered and compared to existing
+command strings with routines to execute per each command string.
 
 ![TISC Example configuration](Screenshots/tiscv2_3_example.png)
 
@@ -32,25 +40,27 @@ program that is ready to load into the Logisim circuit.
 
 A successful output will appear like this:
 
-	$ tisc ExamplePrograms/fibb_test.tac out
-	Assembling tac file: 'ExamplePrograms/fibb_test.tac' TISC v2.1
-	ln# [addr]:label <op> <args>
-	002 [0x00]:      li     254
-	003 [0x02]:      sp     GRA
-	005 [0x03]:      cin    NIL     GRC
-	007 [0x04]:loop  sb     GRB
-	009 [0x05]:      sop_xor
-	010 [0x06]:      op     GRB     GRC     GRC
-	011 [0x07]:      op     GRB     GRC     GRB
-	012 [0x08]:      op     GRB     GRC     GRC
-	014 [0x09]:      sop_add
-	015 [0x0a]:      op     GRB     GRC     GRB
-	017 [0x0b]:      cmp    GRB     GRC
-	018 [0x0c]:      jmp    loop
-	020 [0x0e]:      sb     GRB
-	021 [0x0f]:end   jmp    end
+	$ ./tisc ExamplePrograms/fibb_test.tac out
+	Assembling tac file: 'ExamplePrograms/fibb_test.tac' TISC v2.3
+	label line  addr:out>op         args
+	      0003  0000:43| li 254
+	            0001:fe| +
+	      0004  0002:9f| sp GRA
+	      0006  0003:c2| cin        NIL     GRC
+	loop  0008  0004:ab| sb GRB
+	      0010  0005:30| sop_xor
+	      0011  0006:fa| op GRB     GRC     GRC
+	      0012  0007:ba| op GRB     GRC     GRB
+	      0013  0008:fa| op GRB     GRC     GRC
+	      0015  0009:00| sop_add
+	      0016  000a:ba| op GRB     GRC     GBR
+	      0018  000b:fb| cmp        GRB     GRC
+	      0019  000c:83| jmp        loop
+	            000d:04| +
+	      0021  000e:ab| sb GRB
+	end   0022  000f:83| jmp        end
+	end         0010:0f| +
 	Finished assembling tac file: 'ExamplePrograms/fibb_test.tac', program size: 17 bytes
-
 
 ## Loading a program
 

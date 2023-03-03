@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#define VERSION_STRING "v2.3"
 #define TOT_INSTRUCTIONS 33
 #define MAX_SYMBOLS    1000
 #define MAX_SYMBOL_LEN 100
@@ -18,6 +19,8 @@
 #define GR_B_STRING "GRB"
 #define GR_C        0x3
 #define GR_C_STRING "GRC"
+
+#define TOKENIZER " \t\n"
 
 int  validSymbols = 0;
 int  addresses[MAX_SYMBOLS];
@@ -180,19 +183,22 @@ int process_label_final(char *label, int address)
 
 uint8_t getRegisterEnumeration(char* string)
 {
-	if ((string != NULL) && (strncmp(string, GR_A_STRING, strlen(GR_A_STRING)) == 0))
+	if (string == NULL) {
+		return 0xFF;
+	}
+	if (strncmp(string, GR_A_STRING, strlen(GR_A_STRING)) == 0)
 	{
 		return GR_A;
-	} else
-	if ((string != NULL) && (strncmp(string, GR_B_STRING, strlen(GR_B_STRING)) == 0))
+	}
+	if (strncmp(string, GR_B_STRING, strlen(GR_B_STRING)) == 0)
 	{
 		return GR_B;
-	} else
-	if ((string != NULL) && (strncmp(string, GR_C_STRING, strlen(GR_C_STRING)) == 0))
+	}
+	if (strncmp(string, GR_C_STRING, strlen(GR_C_STRING)) == 0)
 	{
 		return GR_C;
-	} else
-	if ((string != NULL) && (strncmp(string, NR_STRING, strlen(NR_STRING)) == 0))
+	}
+	if (strncmp(string, NR_STRING, strlen(NR_STRING)) == 0)
 	{
 		return NR;
 	}
@@ -369,25 +375,39 @@ int assemble_lni(
 
 	int byte_len = 0;
 	int bytes[MAX_LNI_SIZE];
-	char* byte_str = strtok(arg[0], ",");
-
-	while (byte_str != NULL)
+	if (arg[0][0] == '"')
 	{
-		int value = stringToInteger(byte_str);
-
-		if (value > 255 || value < 0)
+		for (int i = 1; arg[0][i] != '\0'; i++)
 		{
-			byte_len = 0;
-			printf("FATAL: value provided is invalid %i\n", value);
-			break;
+			
 		}
-
-		byte_str = strtok(NULL, ",");
-		if (byte_len < MAX_LNI_SIZE)
+	}
+	else
+	{
+		char* arg_copy = (char*)malloc(sizeof(char) * strlen(arg[0]));
+		strcpy(arg_copy, arg[0]);
+		char* byte_str = strtok(arg_copy, ",");
+	
+		while (byte_str != NULL)
 		{
-			bytes[byte_len] = value;
+			int value = stringToInteger(byte_str);
+	
+			if (value > 255 || value < 0)
+			{
+				byte_len = 0;
+				printf("FATAL: value provided is invalid %i\n", value);
+				break;
+			}
+	
+			byte_str = strtok(NULL, ",");
+			if (byte_len < MAX_LNI_SIZE)
+			{
+				bytes[byte_len] = value;
+			}
+			byte_len++;
 		}
-		byte_len++;
+	
+		free(arg_copy);
 	}
 
 	if (byte_len <= 1)
@@ -531,8 +551,9 @@ InstructionDefinition_t* getInstructionFromOpcode(const char *opcode)
 	int i;
 	for (i = 0; i < TOT_INSTRUCTIONS; i++)
 	{
-		if (strlen(definitions[i].instructionLabel) == strlen(opcode) &&
-			strncmp(definitions[i].instructionLabel, opcode, strlen(definitions[i].instructionLabel)) == 0)
+		char *label = definitions[i].instructionLabel;
+		if (strlen(label) == strlen(opcode) &&
+		    strncmp(label, opcode, strlen(label)) == 0)
 		{
 			return_value = &definitions[i];
 			break;
@@ -553,7 +574,7 @@ int parse(int* line_number, FILE *file, char *line, char **label, char **opcode,
 
 	if (str != NULL)
 	{
-		first = strtok(line, " \t\n");
+		first = strtok(line, TOKENIZER);
 
 		if (first == NULL || first[0] == '#')
 		{
@@ -563,7 +584,7 @@ int parse(int* line_number, FILE *file, char *line, char **label, char **opcode,
 		else if (first[strlen(first) - 1] == ':')
 		{
 			*label = first;
-			*opcode = strtok(NULL, " \t\n");
+			*opcode = strtok(NULL, TOKENIZER);
 			if (*opcode != NULL)
 			{
 				first[strlen(first) - 1] = '\0';
@@ -581,9 +602,9 @@ int parse(int* line_number, FILE *file, char *line, char **label, char **opcode,
 
 		if (success)
 		{
-			arg[0] = strtok(NULL, " \t\n");
-			arg[1] = strtok(NULL, " \t\n");
-			arg[2] = strtok(NULL, " \t\n");
+			arg[0] = strtok(NULL, TOKENIZER);
+			arg[1] = strtok(NULL, TOKENIZER);
+			arg[2] = strtok(NULL, TOKENIZER);
 		}
 
 		*line_number = *line_number + 1;
@@ -703,7 +724,7 @@ void print_instruction_header(int label_width)
 	label_str[label_width] = '\0';
 	strncpy(label_str, "label", 5);
 
-	printf("ln# [addr]:%s <op> <args>\n", label_str);
+	printf("%s line  addr:out>op \targs\n", label_str);
 	free(label_str);
 }
 
@@ -711,7 +732,7 @@ void print_instruction_header(int label_width)
    about the source line number, the physical address, the label the instruction has,
    and the args for that instruction
 */
-void print_instruction(int line, int* address, char *label, char *opcode, char *arg[3], int label_width)
+void print_instruction(int line, int begin_address, int end_address, uint8_t *buffer, char *label, char *opcode, char *arg[3], int label_width)
 {
 	int len = 0;
 	for (int i = 0; arg[i] != NULL && i < 3; i++)
@@ -735,7 +756,7 @@ void print_instruction(int line, int* address, char *label, char *opcode, char *
 				break;
 			}
 			sprintf(arg_str, "%s%s\t", arg_str, arg[i]);
-		}	
+		}
 	}
 
 	char* label_str = (char*)malloc(sizeof(char) * (label_width + 1));
@@ -750,7 +771,14 @@ void print_instruction(int line, int* address, char *label, char *opcode, char *
 		strncpy(label_str, label, strlen(label));
 	}
 
-	printf("%03i [0x%04x]:%s %s\t%s\n", line, *address, label_str, opcode, arg_str);
+	int this_size = (int)(end_address - begin_address);
+	uint8_t *this_buffer = buffer + begin_address;
+
+	printf("%s %04i  %04x:%02x| %s\t%s\n", label_str, line + 1, begin_address, this_buffer[0], opcode, arg_str);
+	for (int i = 1; i < this_size; i++)
+	{
+		printf("%s       %04x:%02x| +\n", label_str, begin_address + i, this_buffer[i]);
+	}
 	free(label_str);
 	if (strlen(arg_str) != 0)
 	{
@@ -803,7 +831,7 @@ int main(int argc, char *argv[])
 		printf("Error opening file '%s'\n", output);
 		goto DITCH;
 	}
-	printf("Assembling tac file: '%s' TISC v2.1\n", input);
+	printf("Assembling tac file: '%s' TISC %s\n", input, VERSION_STRING);
 
 	while (parse(&line_number, inputf, line, &label, &opcodes, args))
 	{
@@ -854,14 +882,16 @@ int main(int argc, char *argv[])
 
 		while (parse(&line_number, inputf, line, &label, &opcodes, args))
 		{
-			print_instruction(line_number - 1, &address, label, opcodes, args, label_width);
-
+			int begin_address = address;
+			int begin_line = line_number;
 			if (process(line_number, &address, w_buffer, label, opcodes, args) == 0)
 			{
 				printf("Process: Error on line #%i\n", line_number);
 				free(w_buffer);
 				goto CLOSEFILES;
 			}
+
+			print_instruction(begin_line - 1, begin_address, address, w_buffer, label, opcodes, args, label_width);
 		}
 
 		// Output Logisim raw v2.0 format

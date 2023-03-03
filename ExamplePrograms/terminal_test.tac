@@ -145,7 +145,7 @@ cmpr_f:  lli 0x0 # return pointer memory address
          sp GRA
 ######## Get the buffer length + start address
          lb GRC
-         ptrinc         
+         ptrinc
          lb GRB
          sp GRB
 ######## If the length of our string does not match our buffer,

@@ -107,7 +107,7 @@ there is underflow. `op` will perform A >> B.
 
 	sop_rsh
 
-Program Counter Return Address - stores program counter return address to `GRA`
+Program Counter Return Address - pushes program counter return address to stack
 
 	pcr
 

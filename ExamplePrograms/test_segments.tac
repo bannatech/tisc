@@ -1,6 +1,15 @@
 # test_segment - This file demonstrates how to call and return between segments
 #                of memory that expands the program memory size limit to 0xFFFF
 #
+# The program counter of the TISC is only able to address the 8-bit space: this
+# allows for an architecture that uses an absolute one byte unit as the atomic
+# size for processing instruction metadata. This program explores expanding the
+# executable instruction space to a 16-bit space.
+#
+# The method in which we are able to expand the executable instruction space is
+# through the use of external instruction memory with a writable register mapped
+# to a 8-bit RAM space.
+
 #-------------------------------------------------0x00 SEGMENT START------------
 #-------------------------------------------------0x00 SEGMENT INDEX START------
 # Segment index, responsible for "routing" calls to other segments
@@ -16,16 +25,17 @@ index@00: nand NIL NIL GRC
 #
 # Since this is in segment 0x00, we must test if we are just starting
           sop_and
-          cmp GRA GRA  # test if the jump pointer is 
+          cmp GRA GRA  # test if the jump pointer is null
           jmp begin@00 # jump to the actual beginning of the program
           goto         # jump to the pointer if it isn't 0
 #-------------------------------------------------0x00 SEGMENT INDEX END--------
-# 
+#
 begin@00: lli 0x1 # segment address
           mov GRA GRB
           getlabel test@01 # get the address of our target function in 0x01
           pcr
           jmp index@00
+          pop
 loop@00:  jmp loop@00
 #-------------------------------------------------0x00 SEGMENT END--------------
 #-------------------------------------------------0x01 SEGMENT START------------

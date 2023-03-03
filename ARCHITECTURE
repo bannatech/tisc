@@ -1,0 +1,95 @@
+TISCv2.3 (c) Paul Longtine <paul@nanner.co>
+Tiny Instruction Set Computer
+
+ __________   ___      ________       ________
+|\___   ___\ |\  \    |\   ____\     |\   ____\
+\|___ \  \_| \ \  \   \ \  \___|_    \ \  \___|
+     \ \  \   \ \  \   \ \_____  \    \ \  \
+      \ \  \   \ \  \   \|____|\  \    \ \  \____
+       \ \__\   \ \__\    ____\_\  \    \ \_______\
+        \|__|    \|__|   |\_________\    \|_______| v2.3
+                         \|_________|
+
+-----------------------------------------------------------------------<--------
+  The Architecture of TISC
+-----------------------------------------------------------------------<--------
+
+The basic architecture of TISC resembles a Von-Neumann architecture with a an 8-bit
+address space and an 8-bit word. The execution of instructions and input data is
+conditionally sourced from external input or internal RAM. Internally the data loop
+has two primary busses: Register Input bus, and the ALU Output bus.
+
+There are a total of 10 busses with 7 distinct busses which compose to allow data
+to move through the architecture.
+
+The 7 distinct data busses (in no particular order) are as follows:
+
+0* ALU Output Bus
+1* Stack Output Bus
+2* Immediate Bus
+3* Program Counter Output Bus
+4* Memory Pointer Bus
+5* Memory Output Bus
+6* External Input Bus
+
+The 3 multiplexed data busses are as follows:
+
+7* The Register Input bus is multiplexed from 4 busses:
+ 0* ALU Output Bus
+ 1* Stack Output Bus
+ 2* Immediate Bus
+ 9* Internal Input Bus
+
+8* The Address Bus is multiplexed from 2 busses:
+ 3* Program Counter Output Bus
+ 4* Memory Pointer Bus
+
+9* The Internal Input Bus is multiplexed from 2 busses:
+ 5* Memory Output Bus
+ 6* External Input Bus
+
+These multiplexed busses support the modularity of the system to implement external
+instruction memory and external memory mapped components to extend the capacity of
+a TISC core by controlling the source of each multiplexed bus.
+
+-----------------------------------------------------------------------<--------
+    External Interface
+-----------------------------------------------------------------------<--------
+
+TISC is structured to be exensible through I/O context and persisting a common core
+across implementations
+
+The external interface of TISC has 8 distinct input/output ports
+
+IO ACTIVE: boolean output
+	Raised when there is an externally mapped address currently selected to support
+	memory mapped IO.
+	Known internally as the "External Address Select". The default address range
+	is 0xFC - 0xFF as memory mapped I/O ports.
+
+IO ENABLE: boolean input
+	External components raise this line to signal that the external INPUT line can be used
+
+WRITE ACTIVE: boolean output
+	Raised when there is a write operation for the selected external component.
+
+INPUT: 8-bit input bus
+	This is the 8-bit bus for incoming data from outside of the TISC core
+
+OUTPUT: 8-bit output bus
+	This is the 8-bit bus for outgoing data routed to outside of the TISC core
+
+ADDRESS: 8-bit output bus
+	The current 8-bit program counter value, used to signal for external memory mapped IO
+
+CLOCK: sync. signal
+	core clock line
+
+RESET: sync. signal
+	reset core
+
+
+
+
+
+

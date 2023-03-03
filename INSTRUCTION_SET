@@ -14,7 +14,7 @@ Tiny Instruction Set Computer
 RAW      - memonic - description
 -----------------------------------------------------------------------<--------
 00000000 - SOP_ADD    ----- SetOp ADD, flag if overflow
-00010000 - SOP_SUB    ----- SetOp SUB, A-B and flag if sign is positive 
+00010000 - SOP_SUB    ----- SetOp SUB, A-B and flag if sign is positive
 00100000 - SOP_AND    ----- SetOp AND, A&B and flag if the output is nonzero
 00110000 - SOP_XOR    ----- SetOp XOR, A^B and flag if the output is nonzero
 01000000 - SOP_XNOR   ----- SetOp XNOR, ~(A^B) and flag if the output is nonzero
@@ -29,7 +29,7 @@ C B A 01 - NAND       ----- C = A nand B
 C B A 10 - OP         ----- C = A (OP) B - perform operation set by SOP_*
 C B 0010 - CIN        ----- C = ++B
 00<lo>11 - LLI        ----- Load lower immediate to GRA
-01000011 - LI         ----- Load byte immediate to GRA 
+01000011 - LI         ----- Load byte immediate to GRA
 01<nb>11 - LNI        ----- Load <nb> length immediate to stack
 10000011 - JMP        ----- JMP to address in next program word if flag is false
 10010011 - PSH        ----- Push GRA to stack
@@ -40,7 +40,7 @@ C B 0010 - CIN        ----- C = ++B
 10001011 - SBS        ----- Pop stack and store to mem pointer
 10B 1011 - SB         ----- Store contents of ARGB GPR to mem pointer
 10001111 - SPS        ----- Pop stack and set mem pointer
-10B 1111 - SP         ----- Set pointer ARGB GPR 
+10B 1111 - SP         ----- Set pointer ARGB GPR
 11B A 11 - CMP        ----- Computes flag on set operation
 
 -----------------------------------------------------------------------<--------
@@ -51,3 +51,4 @@ A = Arguement A / ARGA
 GRA = General Purpose Register A = 0b01
 GRB = General Purpose Register B = 0b10
 GRC = General Purpose Register C = 0b11
+
