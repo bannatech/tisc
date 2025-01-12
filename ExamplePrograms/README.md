@@ -2,11 +2,9 @@
 
 TODO: Implement some kind of variables / defines
 
-TODO: Hardcoded string constant meta-instruction
-
 ### Structure
 
-Each assembly line must start with either a comment, 
+Each assembly line must start with either a comment:
 
 	#Some words
 
@@ -14,7 +12,7 @@ An Instruction:
 
 	[opcode] [arguments]
 
-Or a label, followed with an instruction,
+Or a label, followed with an instruction:
 
 	[label]: [opcode] [arguments]
 
@@ -40,6 +38,8 @@ Please refer to the examples as reference.
  		* Base 2: Prefixed with `0b`
 
  * `<bytes>` An array of integers within `<0-255>` e.g. `0xff,255,0b11111111`
+
+ * `<string>` An ascii string, supports escape characters: `\0`, `\n`, `\r`
 
 ## 0 Argument Instructions
 
@@ -162,6 +162,17 @@ Meta-instruction that is identical to `li` that gets the assigned address of
 the label to use as an immediate
 
 	getlabel A<label>
+
+Meta-instruction that chains together `lni` and `li` instructions that load an
+ascii string onto the stack, popping the stack will present the string in order
+
+	string A<string>
+
+Meta-instruction that chains together `lni` and `li` instructions that load an
+ascii string onto the stack, popping the stack will present the string in
+reverse order
+
+	string_r A<string>
 
 Load Immediate to `GRA`
 

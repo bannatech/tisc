@@ -36,7 +36,7 @@ begin@00: mnb_incr
 #                 call specific methods.
 #                 Uses the ExampleConfigurationROM circuit
 ###################### Print the welcome string
-        lni 0x0,0xa,0x21,0x65,0x6d,0x6f,0x63,0x6c,0x65,0x57
+        string Welcome!\n\0
         pcr
         jmp print
         jmp term_char
@@ -49,7 +49,7 @@ poll_setup: lni 32,0x00
 poll:   sop_xor
         lni 128,252 # Load the bitmask for available data + the polling address
         sps         # Set the polling address
-        pop         # Get the bitmask for available data
+        pop         # Pop the bitmask for available data into GRA
 ###################### Poll until data is available
 p_loop: lb GRB
         cmp GRB GRA
@@ -105,6 +105,7 @@ print_done: mov GRB GRA
 ##### first off, store our buffer end pointer in RAM
 cmpr: li 32 # buffer pointer
       push
+      # compute the buffer size
       sop_sub
       op GRC GRA GRA
       push
@@ -112,11 +113,11 @@ cmpr: li 32 # buffer pointer
       sp GRA
       mnb_store
       mnb 2
+      # read if we are going to copy the buffer from the "set" command
       li 0x10
       sp GRA
       lb GRA
-      sop_and
-      cmp GRA GRA
+      or GRA GRA
       jmp copy
       getlabel do_comp@01
       push
@@ -133,11 +134,11 @@ cmpr: li 32 # buffer pointer
       cmp GRA GRA
       jmp poll_setup
 ###################### Print the terminal character '$ '
-term_char:  lni 0x0,0x20,0x24
+term_char:  string $ \0
             pcr
             jmp print
             jmp poll_setup
-########### copy
+########### copy routine
 copy:       li 0x01
             sp GRA
             lb GRC
@@ -216,7 +217,7 @@ n0:   lni 0x1D,0x01
       cmp GRA GRA
       jmp n1
 ############ load the null-terminated string
-############ "we are alive\n\0"
+############ "horray!\n\0"
       lni 0x2A,0x01
       seg
       sps
@@ -248,16 +249,12 @@ n1:   lni 0x10,0x01
       mnb 6
       pcr
       jmp print@01
-      jmp return@01 
-############ load the null-terminated string
-############ "bar\n\0"
-       lni 0x0,0xa,0x72,0x61,0x62
-       pcr
-       jmp print@01
-       jmp return@01
+      jmp return@01
 ############ Respond to 'clear' by clearing the TTY
 #      "clear\n", length 6
-n2:    lni 0x0,0xa,0x72,0x61,0x65,0x6c,0x63,6
+n2:    string clear\n\0
+       li 6 #length
+       push
        pcr
        jmp callcmp
        pop
@@ -270,7 +267,9 @@ n2:    lni 0x0,0xa,0x72,0x61,0x65,0x6c,0x63,6
        sbs
        jmp return@01
 ############ Respond to 'set' by copying the next entered string into memory
-n3:    lni 0x0,0xa,0x74,0x65,0x73,4
+n3:    string set\n\0
+       li 4 #length
+       push
        pcr
        jmp callcmp
        pop
@@ -286,7 +285,9 @@ n3:    lni 0x0,0xa,0x74,0x65,0x73,4
        sbs
        jmp return@01
 ############ Respond to 'print' by printing the string stored in memory by "set"
-n4:    lni 0x0,0xa,0x74,0x6e,0x69,0x72,0x70,6
+n4:    string print\n\0
+       li 6 #length
+       push
        pcr
        jmp callcmp
        pop
@@ -435,20 +436,29 @@ return@03: li 0x8  # Our pointer in RAM for the return segment and address
            lb GRA  # load the return address
            jmp index@03 # go route us!
 ########## static strings
-init:      mnb_store
-           lni 0x05,0x70,0x69,0x6e,0x67,0x0a,0x0,0x10,0x01
+init:      mnb_incr
+           mnb_store
+           lni 0x05,0x10,0x01 # string length, address, segment
            seg
            sps
+           string_r ping\n\0
            mnb 7
-           lni 0x70,0x6f,0x6e,0x67,0x0a,0x00,0x17
+
+           li 0x17 # address
+           sp GRA
+           string_r pong\n\0
+           mnb 6 #
+
+           lni 0x0B,0x1D # string length, address
            sps
-           mnb 6
-           lni 0x0B,0x74,0x65,0x73,0x74,0x69,0x6e,0x67,0x31,0x32,0x33,0x0a,0x0,0x1D
-           sps
+           string_r testing123\n\0
            mnb 13
-           lni 0x68,0x6f,0x6f,0x72,0x61,0x79,0x21,0xa,0x0,0x2A
-           sps
+
+           string_r horray!\n\0
+           li 0x2A
+           sp GRA
            mnb 9
+
            li 0
            seg
 trap@03:   jmp return@03
