@@ -588,7 +588,7 @@ int load_string(
 	}
 	else
 	{
-		definition->instructionLength = str_len + (str_len / MAX_LNI_SIZE);
+		definition->instructionLength = 1 + str_len + (str_len / MAX_LNI_SIZE);
 	}
 
 	if (str_len == 0)
